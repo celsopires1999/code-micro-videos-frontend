@@ -1,0 +1,62 @@
+version: '3'
+
+services:
+
+    app:
+        build: .
+        container_name: micro-videos-app
+        entrypoint: dockerize -wait tcp://db:3306 -timeout 40s ./.docker/entrypoint.sh
+        environment:
+            - XDEBUG_CONFIG=client_host=app client_port=9003 start_with_request=yes log=/var/log/xdebug.log
+            - XDEBUG_MODE=debug
+            - XDEBUG_SESSION=vscode
+        ports:
+            - "9003:9003"
+        volumes:
+            - .:/var/www
+        networks:
+            - app-network
+        depends_on:
+            - db
+            - redis
+
+    nginx:
+        build: .docker/nginx
+        container_name: micro-videos-nginx
+        restart: always
+        tty: true
+        ports:
+            - "8000:80"
+        volumes:
+            - .:/var/www
+        networks:
+            - app-network
+        depends_on:
+            - app
+
+    db:
+        build: ./.docker/mysql
+        container_name: micro-videos-db
+        restart: always
+        tty: true
+        ports:
+            - "33006:3306"
+        volumes:
+            - ./.docker/dbdata:/var/lib/mysql
+            - ./.docker/mysql:/docker-entrypoint-initdb.d
+        environment:
+            - MYSQL_ROOT_PASSWORD=root
+        networks:
+            - app-network
+
+    redis:
+        image: redis:alpine
+        container_name: micro-videos-redis
+        expose:
+            - 6379
+        networks:
+            - app-network
+
+networks:
+    app-network:
+        driver: bridge

@@ -1,0 +1,50 @@
+steps:
+
+- id: "Gerando service-account-storage.json"
+  name: 'gcr.io/cloud-builders/gcloud'
+  args:
+    - kms
+    - decrypt
+    - --ciphertext-file=./storage/credentials/google/service-account-storage.json.enc 
+    - --plaintext-file=./storage/credentials/google/service-account-storage.json 
+    - --location=global 
+    - --keyring=testing-lesson 
+    - --key=service-account
+
+- id: "Rodando docker-compose"
+  name: 'docker/compose'
+  args: ['-f','docker-compose.prod.yaml','up','-d']
+  env:
+    - GOOGLE_CLOUD_PROJECT_ID=$PROJECT_ID
+    - GOOGLE_CLOUD_KEY_FILE=service-account-storage.json
+    - GOOGLE_CLOUD_STORAGE_BUCKET=code-micro-videos-celso
+    - GOOGLE_CLOUD_STORAGE_API_URI=https://storage.cloud.google.com/code-micro-videos-celso
+    - TESTING_PROD=true
+
+-   id: "Chown in /var/www"
+    name: 'docker'
+    args: ['exec','-u','root','-t','app','chown','-R','www-data:www-data','/var/www']
+
+- id: "Rodando composer"
+  name: 'docker'
+  args: ['exec','-t','app','composer','install']
+
+- id: "Copiando .env"
+  name: 'docker'
+  args: ['exec','-t','app','cp','.env.example','.env']
+
+- id: "Copiando .env.testing"
+  name: 'docker'
+  args: ['exec','-t','app','cp','.env.testing.example','.env.testing']
+
+- id: "Rodando key:generate"
+  name: 'docker'
+  args: ['exec','-t','app','php','/var/www/artisan','key:generate']    
+
+- id: "Rodando migrations"
+  name: 'docker'
+  args: ['exec','-t','app','php','/var/www/artisan','migrate']    
+
+- id: "Rodando Phpunit"
+  name: 'docker'
+  args: ['exec','-t','app','php','/var/www/vendor/bin/phpunit','-c','/var/www/phpunit.xml']    
