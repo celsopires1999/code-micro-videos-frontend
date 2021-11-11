@@ -12,6 +12,7 @@ services:
             - XDEBUG_SESSION=vscode
         ports:
             - "9003:9003"
+            - "3000:3000"
         volumes:
             - .:/var/www
         networks:

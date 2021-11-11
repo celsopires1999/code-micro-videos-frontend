@@ -6,18 +6,26 @@ import { Chip } from '@material-ui/core';
 
 import format from 'date-fns/format';
 import parseISO from 'date-fns/parseISO';
-import categoryHttp from '../../util/http/category-http';
 
 const columnsDefinition: MUIDataTableColumn[] = [
     {
         name: "name",
         label: "Nome"
     },
+        {
+        name: "categories",
+        label: "Categorias",
+        options: {
+            customBodyRender(value, tableMeta, updateValue) {
+                return value.map(value => value.name).join(', ');
+            }
+        }
+    },
     {
         name: "is_active",
         label: "Ativo?",
         options: {
-            customBodyRender(value, tableMeta, updateValue) {
+            customBodyRender(value,tableMeta, updateValue) {
                 return value ? <Chip label="Sim" color="primary" /> : <Chip label="Não" color="secondary" />;
             }
         }
@@ -40,12 +48,9 @@ const Table = (props: Props) => {
     const [data, setData] = useState([]);
 
     useEffect(() => {
-        categoryHttp
-            .list()
-            .then(({data}) => setData(data.data));
-        // httpVideo.get('categories').then(
-        //     response => setData(response.data.data)
-        // )
+        httpVideo.get('genres').then(
+            response => setData(response.data.data)
+        )
     }, []);
 
     return (
