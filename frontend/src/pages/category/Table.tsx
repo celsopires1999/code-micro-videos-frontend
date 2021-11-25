@@ -36,12 +36,18 @@ const columnsDefinition: MUIDataTableColumn[] = [
 type Props = {
     
 };
+
+interface Category {
+    id: string,
+    name: string
+}
+
 const Table = (props: Props) => {
-    const [data, setData] = useState([]);
+    const [data, setData] = useState<Category[]>([]);
 
     useEffect(() => {
         categoryHttp
-            .list()
+            .list<{ data: Category[] }>()
             .then(({data}) => setData(data.data));
         // httpVideo.get('categories').then(
         //     response => setData(response.data.data)
