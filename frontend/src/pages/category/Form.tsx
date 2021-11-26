@@ -17,7 +17,7 @@ export const Form = () => {
 
     const buttonProps: ButtonProps = {
         className: classes.submit,
-        variant: "outlined"
+        variant: "contained",
     }
 
     const { register, handleSubmit, getValues } = useForm({
@@ -62,12 +62,19 @@ export const Form = () => {
             />
             <Checkbox 
                 name="is_active"
+                color={ "primary" }
                 inputRef={ register }
                 defaultChecked
             />
             Ativo?
             <Box dir="rtl">
-                <Button { ...buttonProps} onClick={ () => onSubmit(getValues(), null) }>Salvar</Button>
+                <Button 
+                    color={"primary"}
+                    { ...buttonProps} 
+                    onClick={ () => onSubmit(getValues(), null) }
+                >
+                    Salvar
+                </Button>
                 <Button { ...buttonProps} type="submit">Salvar e continuar editando</Button>
             </Box>
         </form>
