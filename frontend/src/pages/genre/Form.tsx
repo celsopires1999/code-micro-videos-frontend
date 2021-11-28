@@ -19,6 +19,7 @@ export const Form = () => {
 
     const buttonProps: ButtonProps = {
         className: classes.submit,
+        color: "secondary",
         variant: "contained"
     }
 
