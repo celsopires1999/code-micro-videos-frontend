@@ -1,6 +1,8 @@
-import { createTheme, SimplePaletteColorOptions } from "@material-ui/core";
+import { createTheme } from "@material-ui/core";
+import { green, red } from "@material-ui/core/colors";
+import { PaletteOptions, SimplePaletteColorOptions } from "@material-ui/core/styles/createPalette";
 
-const palette = {
+const palette: PaletteOptions = {
     primary: {
         main: '#79aec8',
         contrastText: '#fff'
@@ -11,7 +13,15 @@ const palette = {
     },
     background: {
         default: '#fafafa'
-    }
+    },
+    success: {
+        main: green['500'],
+        contrastText: '#fff'
+    },
+
+    error: {
+        main: red['500']
+    },
 }
 
 const theme = createTheme({
@@ -25,7 +35,7 @@ const theme = createTheme({
         MUIDataTableToolbar: {
             root: {
                 minHeight: '58px',
-                backgroundColor: palette.background.default
+                backgroundColor: palette!.background!.default
             },
             icon: {
                 color: (palette!.primary as SimplePaletteColorOptions).main,
