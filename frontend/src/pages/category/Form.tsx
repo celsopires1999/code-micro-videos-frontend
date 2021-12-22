@@ -1,8 +1,11 @@
-// import * as React from "react";
-import { Box, Button, ButtonProps, Checkbox, makeStyles, TextField, Theme } from "@material-ui/core";
+import * as React from "react";
+import { Box, Button, ButtonProps, Checkbox, FormControlLabel, makeStyles, TextField, Theme } from "@material-ui/core";
+import { useSnackbar } from "notistack";
+import { useEffect, useState } from "react";
 import useForm from "react-hook-form";
+import { useParams, useHistory } from "react-router";
 import categoryHttp from "../../util/http/category-http";
-import * as yup from 'yup';
+import * as yup from '../../util/vendor/yup';
 
 const useStyles = makeStyles((theme: Theme) => {
     return {
@@ -15,40 +18,94 @@ const useStyles = makeStyles((theme: Theme) => {
 const validationSchema = yup.object().shape({
     name: yup.string()
         .label('Nome')
-        .required(),
+        .required()
+        .max(255),
 });
+
 
 export const Form = () => {
 
     const classes = useStyles();
 
-    const buttonProps: ButtonProps = {
-        className: classes.submit,
-        color: "secondary",
-        variant: "contained",
-    }
-
-    const { register, handleSubmit, getValues, errors } = useForm({
+    const { register, 
+        handleSubmit, 
+        getValues, 
+        setValue,
+        errors, 
+        reset, 
+        watch 
+    } = useForm({
         validationSchema,
         defaultValues: {
             is_active: true
         }
     });
-    
-    function onSubmit(formData, event) {
-        console.log(event);
-        // salvar e editar
-        // salvar
-        categoryHttp
-            .create(formData)
-            .then((response) => console.log(response));
+
+    const snackbar = useSnackbar();
+    const history = useHistory();
+    const {id}:any = useParams();
+    const [category, setCategory] = useState();
+    const [loading, setLoading] = useState<boolean>(false);
+
+    const buttonProps: ButtonProps = {
+        className: classes.submit,
+        color: "secondary",
+        variant: "contained",
+        disabled: loading,
     }
 
-    // const onSubmit = (formData) => {
-    //     categoryHttp
-    //         .create(formData)
-    //         .then((response) => console.log(response));
-    // }
+    useEffect(() => {
+        register({name: 'is_active'})
+    }, [register]);
+
+    useEffect(() => {
+        if (!id){
+            return
+        }
+        setLoading(true);
+        categoryHttp.get(id)
+            .then(
+                ({data}) => {
+                    setCategory(data.data);
+                    reset(data.data)
+                }
+            )
+            .catch(
+                error => console.log(error)
+            )
+            .finally(() => setLoading(false))
+    }, [id, reset]);
+
+    function onSubmit(formData, event) {
+        setLoading(true);
+        const http = !category 
+            ? categoryHttp.create(formData) 
+            : categoryHttp.update(id, formData)
+        http
+            .then(({data}) => {
+                snackbar.enqueueSnackbar(
+                    'Categoria salva com sucesso',
+                    {variant: 'success'}
+                )
+                setTimeout(()=>{
+                    event
+                    ? (
+                        id
+                            ? history.replace(`/categories/${data.data.id}/edit`)
+                            : history.push(`/categories/${data.data.id}/edit`)
+                    )
+                    : history.push('/categories')
+                })
+            })
+            .catch(error => {
+                console.log(error);
+                snackbar.enqueueSnackbar(
+                    'Não foi possível gravar a categoria',
+                    {variant: 'error'}
+                )
+            })
+            .finally(() => setLoading(false));
+    }
 
     return (
         <form onSubmit={ handleSubmit(onSubmit) }>
@@ -59,7 +116,9 @@ export const Form = () => {
                 variant="outlined"
                 inputRef={ register }
                 error={ errors.name !== undefined }
+                disabled={loading}
                 helperText={errors.name && errors.name.message}
+                InputLabelProps={{shrink: true}}
             />
             <TextField 
                 name="description"
@@ -70,14 +129,24 @@ export const Form = () => {
                 variant="outlined"
                 margin="normal"
                 inputRef={ register }
+                disabled={loading}
+                InputLabelProps={{shrink: true}}
             />
-            <Checkbox 
-                name="is_active"
-                color={ "primary" }
-                inputRef={ register }
-                defaultChecked
+            <FormControlLabel 
+                disabled={loading}
+                control={
+                    <Checkbox 
+                        name="is_active"
+                        color={ "primary" }
+                        onChange={
+                            () => setValue('is_active', !getValues()['is_active'])
+                        }
+                        checked={ (watch('is_active')) as boolean }
+                    />   
+                }
+                label={'Ativo?'}
+                labelPlacement='end'
             />
-            Ativo?
             <Box dir="rtl">
                 <Button 
                     color={"primary"}
