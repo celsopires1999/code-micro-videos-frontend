@@ -41,7 +41,7 @@ export const Form = () => {
         }
     });
 
-    const snackbar = useSnackbar();
+    const { enqueueSnackbar } = useSnackbar();
     const history = useHistory();
     const {id}:any = useParams();
     const [category, setCategory] = useState();
@@ -70,11 +70,15 @@ export const Form = () => {
                     reset(data.data)
                 }
             )
-            .catch(
-                error => console.log(error)
-            )
+            .catch(error => {
+                console.log(error);
+                enqueueSnackbar(
+                    `Não foi possível encontrar a categoria: ${id}`,
+                    {variant: 'error'}
+                )
+            })
             .finally(() => setLoading(false))
-    }, [id, reset]);
+    }, [id, reset, enqueueSnackbar]);
 
     function onSubmit(formData, event) {
         setLoading(true);
@@ -83,7 +87,7 @@ export const Form = () => {
             : categoryHttp.update(id, formData)
         http
             .then(({data}) => {
-                snackbar.enqueueSnackbar(
+                enqueueSnackbar(
                     'Categoria salva com sucesso',
                     {variant: 'success'}
                 )
@@ -99,7 +103,7 @@ export const Form = () => {
             })
             .catch(error => {
                 console.log(error);
-                snackbar.enqueueSnackbar(
+                enqueueSnackbar(
                     'Não foi possível gravar a categoria',
                     {variant: 'error'}
                 )
