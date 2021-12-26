@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Box, Button, ButtonProps, makeStyles, TextField, Theme } from "@material-ui/core";
+import { Box, Button, ButtonProps, FormHelperText, makeStyles, TextField, Theme } from "@material-ui/core";
 import { Radio, RadioGroup, FormControlLabel, FormControl, FormLabel } from "@material-ui/core";
 import { useEffect, useState } from "react";
 import useForm from "react-hook-form";
@@ -7,6 +7,7 @@ import castMemberHttp from "../../util/http/cast-member-http";
 import { useSnackbar} from 'notistack';
 import * as yup from 'yup';
 import { useParams, useHistory } from "react-router";
+import { CastMember } from "../../util/models";
 
 const useStyles = makeStyles((theme: Theme) => {
     return {
@@ -27,21 +28,6 @@ const validationSchema = yup.object().shape({
 });
 
 export const Form = () => {
-
-    const { enqueueSnackbar } = useSnackbar();
-    const [loading, setLoading] = useState<boolean>(false);
-    const {id}:any = useParams();
-    const [castMember, setCastMember] = useState();
-    const classes = useStyles();
-    const history = useHistory();
-
-    const buttonProps: ButtonProps = {
-        className: classes.submit,
-        color: "secondary",
-        variant: "contained",
-        disabled: loading,
-    }
-
     const { 
         register, 
         handleSubmit, 
@@ -54,6 +40,20 @@ export const Form = () => {
         validationSchema,
     });
     
+    const { enqueueSnackbar } = useSnackbar();
+    const [loading, setLoading] = useState<boolean>(false);
+    const {id}:any = useParams();
+    const [castMember, setCastMember] = useState<CastMember | null>(null);
+    const classes = useStyles();
+    const history = useHistory();
+
+    const buttonProps: ButtonProps = {
+        className: classes.submit,
+        color: "secondary",
+        variant: "contained",
+        disabled: loading,
+    }
+
     useEffect(() => {
         register({name: "type"})
     }, [register]);
@@ -63,47 +63,51 @@ export const Form = () => {
             return
         }
         setLoading(true);
-        castMemberHttp.get(id)
-            .then(({data})=>{
+        (async () => {
+            try {
+                const {data} = await castMemberHttp.get(id);
                 setCastMember(data.data);
-                reset(data.data);
-            })
-            .catch((error)=>{
-                enqueueSnackbar(`Erro ao obter membro de elenco para edição: ${id}`, {variant: 'error'});
-                console.log(error);
-            })
-            .finally(()=> setLoading(false));
-        }, [id, reset, enqueueSnackbar]
-    );
-
-    function onSubmit(formData, event) {
-        setLoading(true);
-        const http = !castMember 
-                ? castMemberHttp.create(formData) 
-                : castMemberHttp.update(id, formData)
-        http
-            .then(({data}) => {
+                reset(data.data)               
+            } catch (error) {
+                console.error(error);
                 enqueueSnackbar(
-                    `Membro de elenco salvo com sucesso`,
-                    {variant: 'success'});
-                setTimeout(()=>{
-                    event 
-                    ? (
-                        id 
-                            ? history.replace(`/cast-members/${data.data.id}/edit`)
-                            : history.push(`/cast-members/${data.data.id}/edit`)
-                    )
-                    : history.push(`/cast-members`)
-                });
-            })
-            .catch(error => {
-                console.log(error);
-                enqueueSnackbar(
-                    `Não foi possível gravar o membro de elenco`,
+                    `Erro ao obter membro de elenco para edição: ${id}`, 
                     {variant: 'error'}
                 );
-            })
-            .finally(()=>setLoading(false));
+            } finally {
+                setLoading(false)
+            }
+        })();
+    }, [id, reset, enqueueSnackbar]);
+
+    async function onSubmit(formData, event) {
+        setLoading(true);
+        try {
+            const http = !castMember 
+            ? castMemberHttp.create(formData) 
+            : castMemberHttp.update(id, formData)
+            const {data} = await http;
+            enqueueSnackbar(
+                `Membro de elenco salvo com sucesso`,
+                {variant: 'success'});
+            setTimeout(()=>{
+                event 
+                ? (
+                    id 
+                        ? history.replace(`/cast-members/${data.data.id}/edit`)
+                        : history.push(`/cast-members/${data.data.id}/edit`)
+                )
+                : history.push(`/cast-members`)
+            });          
+        } catch (error) {
+            console.error(error);
+            enqueueSnackbar(
+                `Não foi possível gravar o membro de elenco`,
+                {variant: 'error'}
+            );            
+        } finally {
+            setLoading(false);
+        }
     }
 
     return (
@@ -119,7 +123,11 @@ export const Form = () => {
                 InputLabelProps={{shrink: true}}
                 disabled= { loading }
             />
-            <FormControl margin="normal">
+            <FormControl 
+                margin="normal"
+                error={ errors.type !== undefined}
+                disabled= { loading }
+            >
                 <FormLabel component="legend">Tipo</FormLabel>
                 <RadioGroup
                     name="type"
@@ -131,6 +139,9 @@ export const Form = () => {
                     <FormControlLabel value="1" control={<Radio />} label="Diretor" />
                     <FormControlLabel value="2" control={<Radio />} label="Ator" />
                 </RadioGroup>
+                {
+                    errors.type && <FormHelperText >{ errors.type.message }</FormHelperText>
+                }
             </FormControl>
             <Box dir="rtl">
                 <Button 

@@ -10,6 +10,9 @@ const ptBR = {
   number: {
     min: ({ path, min }) => `${path} precisa ser no mínimo ${min}`,
   },
+  array: {
+    min: ({ path, min }) => `${path} precisa ter no mínimo ${min} item`,
+  },
 };
 
 setLocale(ptBR);

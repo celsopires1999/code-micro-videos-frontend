@@ -6,6 +6,7 @@ import useForm from "react-hook-form";
 import { useParams, useHistory } from "react-router";
 import categoryHttp from "../../util/http/category-http";
 import * as yup from '../../util/vendor/yup';
+import { Category } from "../../util/models";
 
 const useStyles = makeStyles((theme: Theme) => {
     return {
@@ -22,12 +23,9 @@ const validationSchema = yup.object().shape({
         .max(255),
 });
 
-
 export const Form = () => {
-
-    const classes = useStyles();
-
-    const { register, 
+    const { 
+        register, 
         handleSubmit, 
         getValues, 
         setValue,
@@ -41,10 +39,11 @@ export const Form = () => {
         }
     });
 
+    const classes = useStyles();
     const { enqueueSnackbar } = useSnackbar();
     const history = useHistory();
     const {id}:any = useParams();
-    const [category, setCategory] = useState();
+    const [category, setCategory] = useState<Category | null>(null);
     const [loading, setLoading] = useState<boolean>(false);
 
     const buttonProps: ButtonProps = {
@@ -63,52 +62,52 @@ export const Form = () => {
             return
         }
         setLoading(true);
-        categoryHttp.get(id)
-            .then(
-                ({data}) => {
-                    setCategory(data.data);
-                    reset(data.data)
-                }
-            )
-            .catch(error => {
-                console.log(error);
+        (async function () {
+            try {
+                const {data} = await categoryHttp.get(id);
+                setCategory(data.data);
+                reset(data.data);
+            } catch (error) {
+                console.error(error);
                 enqueueSnackbar(
                     `Não foi possível encontrar a categoria: ${id}`,
                     {variant: 'error'}
-                )
-            })
-            .finally(() => setLoading(false))
+                );              
+            } finally {
+                setLoading(false);
+            }
+        })();
     }, [id, reset, enqueueSnackbar]);
 
-    function onSubmit(formData, event) {
+    async function onSubmit(formData, event) {
         setLoading(true);
-        const http = !category 
-            ? categoryHttp.create(formData) 
-            : categoryHttp.update(id, formData)
-        http
-            .then(({data}) => {
-                enqueueSnackbar(
-                    'Categoria salva com sucesso',
-                    {variant: 'success'}
+        try {
+            const http = !category 
+                ? categoryHttp.create(formData) 
+                : categoryHttp.update(id, formData)
+            const {data} = await http;
+            enqueueSnackbar(
+                'Categoria salva com sucesso',
+                {variant: 'success'}
+            )
+            setTimeout(()=>{
+                event
+                ? (
+                    id
+                        ? history.replace(`/categories/${data.data.id}/edit`)
+                        : history.push(`/categories/${data.data.id}/edit`)
                 )
-                setTimeout(()=>{
-                    event
-                    ? (
-                        id
-                            ? history.replace(`/categories/${data.data.id}/edit`)
-                            : history.push(`/categories/${data.data.id}/edit`)
-                    )
-                    : history.push('/categories')
-                })
-            })
-            .catch(error => {
-                console.log(error);
-                enqueueSnackbar(
-                    'Não foi possível gravar a categoria',
-                    {variant: 'error'}
-                )
-            })
-            .finally(() => setLoading(false));
+                : history.push('/categories')
+            })            
+        } catch (error) {
+            console.error(error);
+            enqueueSnackbar(
+                'Não foi possível gravar a categoria',
+                {variant: 'error'}
+            );
+        } finally {
+            setLoading(false);
+        }
     }
 
     return (

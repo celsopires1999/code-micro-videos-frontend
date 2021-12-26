@@ -28,7 +28,8 @@
 	"extensions": [
 		"bmewburn.vscode-intelephense-client",
 		"calebporzio.better-phpunit",
-		"felixfbecker.php-debug"
+		"felixfbecker.php-debug",
+		"humao.rest-client",
 	]
 
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
