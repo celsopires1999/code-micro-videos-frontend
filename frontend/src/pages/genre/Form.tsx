@@ -7,6 +7,8 @@ import * as yup from 'yup';
 import categoryHttp from "../../util/http/category-http";
 import genreHttp from "../../util/http/genre-http";
 import { useSnackbar } from "notistack";
+import { Category, Genre } from "../../util/models";
+import DefaultForm from "../../components/DefaultForm";
 
 const useStyles = makeStyles((theme: Theme) => {
     return {
@@ -18,27 +20,38 @@ const useStyles = makeStyles((theme: Theme) => {
 
 const validationSchema = yup.object().shape({
     name: yup.string()
-            .label('Nome')
-            .required()
-            .max(255),
-})
+        .label('Nome')
+        .required()
+        .max(255),
+    categories_id: yup.array()
+        .label('Categorias')
+        .required()
+        .min(1),
+});
 
 export const Form = () => {
-
-    const { enqueueSnackbar } = useSnackbar();
-    const history = useHistory();
-    const classes = useStyles();
-    const [categories, setCategories] = useState<any[]>([]);
-    const {id}:any = useParams();
-    const [genre, setGenre] = useState();
-    const [loading, setLoading] = useState<boolean>(false);
-    
-    const { register, handleSubmit, getValues, setValue, watch, errors, reset } = useForm<{categories_id}>({
+    const { 
+        register, 
+        handleSubmit, 
+        getValues, 
+        setValue, 
+        watch, 
+        errors, 
+        reset 
+    } = useForm<{name, categories_id}>({
         validationSchema,
         defaultValues: {
             categories_id: []
         }
     });
+
+    const { enqueueSnackbar } = useSnackbar();
+    const history = useHistory();
+    const classes = useStyles();
+    const [categories, setCategories] = useState<Category[]>([]);
+    const {id}:any = useParams();
+    const [genre, setGenre] = useState<Genre | null>(null);
+    const [loading, setLoading] = useState<boolean>(false);
 
     const buttonProps: ButtonProps = {
         className: classes.submit,
@@ -47,46 +60,51 @@ export const Form = () => {
         disabled: loading,
     }
 
-   // get Genre to be updated
+   // get data to enable Genre edit
     useEffect(() => {
-            if (!id) {
-                return
-            }
+        let isSubscribed = true;
+
+        (async () => {
             setLoading(true);
-            genreHttp.get(id)
-                .then(
-                    ({data}) => {
-                        setGenre(data.data);
-                        reset(data.data);
-                    }
+            const promisses = [categoryHttp.list()];
+            if (id) {
+                promisses.push(genreHttp.get(id));
+            }
+            try {
+                const [categoriesResponse, genreResponse] = await Promise.all(promisses);
+                if (isSubscribed) {
+                    setCategories(categoriesResponse.data.data);
+                }
+                if (id && isSubscribed) {
+                    setGenre(genreResponse.data.data);
+                    setGenre(genreResponse.data.data)
+                    const categories_id = genreResponse.data.data.categories.map(category => category.id);
+                    reset({
+                        ...genreResponse.data.data,
+                        categories_id
+                    });
+                }
+            } catch (error) {
+                console.error(error);
+                enqueueSnackbar(
+                    `Não foi possível carregar as informações`,
+                    {variant: 'error'}
                 )
-                .catch(
-                    (error) => {
-                        enqueueSnackbar(`Erro ao obter Genre para edição: ${id}`, {variant:'error'})
-                        console.log('get Genre to be updated: ', error)
-                    }
-                )
-                .finally(() => setLoading(false))
-        }, [id, reset, enqueueSnackbar]
-    );
+            } finally {
+                setLoading(false);
+            }            
+        })();
+
+        return () => {
+            isSubscribed = false;
+        }
+        
+    }, [id, reset, enqueueSnackbar]);
 
     // registrado componente categories_id
     useEffect( () => {
         register({name: "categories_id"})
     }, [register]);
-
-    // hydrate select of categories
-    useEffect( () => {
-        setLoading(true);
-        categoryHttp
-            .list()
-            .then(({data}) => setCategories(data.data))
-            .catch((error)=> {
-                enqueueSnackbar(`Erro ao obter categorias para seleção`, {variant: 'error'});
-                console.log(error);
-            })
-            .finally(() => setLoading(false))
-    }, [enqueueSnackbar]); 
     
     function onSubmit(formData, event) {
         setLoading(true)
@@ -126,7 +144,7 @@ export const Form = () => {
     }
 
     return (
-        <form onSubmit={ handleSubmit(onSubmit) }>
+        <DefaultForm GridItemProps={{ xs: 12, md: 6 }} onSubmit={ handleSubmit(onSubmit)} >
             <TextField 
                 name="name"
                 label="Nome"
@@ -153,7 +171,9 @@ export const Form = () => {
                 SelectProps={{
                     multiple: true
                 }}
-                
+                error={ errors.categories_id !== undefined }
+                helperText={ errors.categories_id && errors.categories_id.message }
+                InputLabelProps={ {shrink: true} }
             >
                 <MenuItem value="" disabled>
                     <em>Selecione categorias</em>
@@ -176,6 +196,6 @@ export const Form = () => {
                 </Button>
                 <Button { ...buttonProps} type="submit">Salvar e continuar editando</Button>
             </Box>
-        </form>
+        </DefaultForm>
     );
 };

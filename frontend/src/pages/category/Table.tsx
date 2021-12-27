@@ -1,14 +1,11 @@
+import * as React from 'react';
 import MUIDataTable, { MUIDataTableColumn } from 'mui-datatables';
-// import * as React from 'react';
 import { useEffect, useState } from 'react';
-// import { httpVideo } from '../../util/http';
-// import { Chip } from '@material-ui/core';
-
 import format from 'date-fns/format';
 import parseISO from 'date-fns/parseISO';
 import categoryHttp from '../../util/http/category-http';
 import { BadgeNo, BadgeYes } from '../../components/Badge';
-// import { id } from 'date-fns/locale';
+import { Category, ListResponse } from '../../util/models';
 
 const columnsDefinition: MUIDataTableColumn[] = [
     {
@@ -39,21 +36,27 @@ type Props = {
     
 };
 
-interface Category {
-    id: string,
-    name: string
-}
-
 const Table = (props: Props) => {
     const [data, setData] = useState<Category[]>([]);
 
     useEffect(() => {
-        categoryHttp
-            .list<{ data: Category[] }>()
-            .then(({data}) => setData(data.data));
-        // httpVideo.get('categories').then(
-        //     response => setData(response.data.data)
-        // )
+        let isSubscribed = true;
+
+        (async function () {
+            try {
+                const {data} = await categoryHttp.list<ListResponse<Category>>();
+                if (isSubscribed) {
+                    setData(data.data);
+                }
+            } catch (error) {
+                console.error(error);
+            }
+        })();
+
+        return () => {
+            isSubscribed = false;
+        }
+
     }, []);
 
     return (
