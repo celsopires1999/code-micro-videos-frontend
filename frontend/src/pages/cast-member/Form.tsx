@@ -8,6 +8,7 @@ import { useSnackbar} from 'notistack';
 import * as yup from 'yup';
 import { useParams, useHistory } from "react-router";
 import { CastMember } from "../../util/models";
+import DefaultForm from "../../components/DefaultForm";
 
 const useStyles = makeStyles((theme: Theme) => {
     return {
@@ -111,7 +112,7 @@ export const Form = () => {
     }
 
     return (
-        <form onSubmit={ handleSubmit(onSubmit) }>
+        <DefaultForm GridItemProps={{ xs: 12, md: 6 }} onSubmit={ handleSubmit(onSubmit)} >
             <TextField 
                 name="name"
                 label="Nome"
@@ -153,6 +154,6 @@ export const Form = () => {
                 </Button>
                 <Button { ...buttonProps} type="submit">Salvar e continuar editando</Button>
             </Box>
-        </form>
+        </DefaultForm>
     );
 };
