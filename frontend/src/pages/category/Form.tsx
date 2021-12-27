@@ -45,6 +45,8 @@ export const Form = () => {
     }, [register]);
 
     useEffect(() => {
+        let isSubscribed = true;
+
         if (!id){
             return
         }
@@ -52,8 +54,10 @@ export const Form = () => {
         (async function () {
             try {
                 const {data} = await categoryHttp.get(id);
-                setCategory(data.data);
-                reset(data.data);
+                if (isSubscribed) {
+                    setCategory(data.data);
+                    reset(data.data);
+                }
             } catch (error) {
                 console.error(error);
                 enqueueSnackbar(
@@ -64,6 +68,11 @@ export const Form = () => {
                 setLoading(false);
             }
         })();
+
+        return () => {
+            isSubscribed = false;
+        }
+
     }, [id, reset, enqueueSnackbar]);
 
     async function onSubmit(formData, event) {

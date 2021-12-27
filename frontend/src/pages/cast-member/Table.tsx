@@ -44,14 +44,23 @@ const Table = (props: Props) => {
     const [data, setData] = useState<CastMember[]>([]);
 
     useEffect(() => {
+        let isSubscribed = true;
+
         (async () => {
             try {
                 const {data} = await castMemberHttp.list<ListResponse<CastMember>>();
-                setData(data.data)                
+                if (isSubscribed) {
+                    setData(data.data)
+                }
             } catch (error) {
                 console.error(error);
             }
         })();
+
+        return () => {
+            isSubscribed = false;
+        }
+
     }, []);
 
     return (

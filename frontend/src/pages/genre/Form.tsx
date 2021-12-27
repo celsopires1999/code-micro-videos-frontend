@@ -62,6 +62,8 @@ export const Form = () => {
 
    // get data to enable Genre edit
     useEffect(() => {
+        let isSubscribed = true;
+
         (async () => {
             setLoading(true);
             const promisses = [categoryHttp.list()];
@@ -70,8 +72,10 @@ export const Form = () => {
             }
             try {
                 const [categoriesResponse, genreResponse] = await Promise.all(promisses);
-                setCategories(categoriesResponse.data.data);
-                if (id) {
+                if (isSubscribed) {
+                    setCategories(categoriesResponse.data.data);
+                }
+                if (id && isSubscribed) {
                     setGenre(genreResponse.data.data);
                     setGenre(genreResponse.data.data)
                     const categories_id = genreResponse.data.data.categories.map(category => category.id);
@@ -90,6 +94,11 @@ export const Form = () => {
                 setLoading(false);
             }            
         })();
+
+        return () => {
+            isSubscribed = false;
+        }
+        
     }, [id, reset, enqueueSnackbar]);
 
     // registrado componente categories_id
