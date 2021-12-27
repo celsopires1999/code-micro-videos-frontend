@@ -5,20 +5,25 @@ import { Navbar } from './components/Navibar';
 import AppRouter from './routes/AppRouter';
 import Breadcrumbs from './components/Breadcrumbs';
 import theme from './theme';
+import { SnackbarProvider } from './components/SnackbarProvider';
+// import { SnackbarProvider } from 'notistack';
 
 const App: React.FC = () => {
   return (
     <React.Fragment>
       <MuiThemeProvider theme={theme}>
-      <CssBaseline/>
-        <BrowserRouter>
-          <Navbar/>
-          <Box paddingTop={ '70px' }>
-            <Breadcrumbs />
-            <AppRouter />
-          </Box>
-        </BrowserRouter>
-      </MuiThemeProvider>
+        <SnackbarProvider>
+            <CssBaseline>
+              <BrowserRouter>
+                <Navbar/>
+                <Box paddingTop={ '70px' }>
+                  <Breadcrumbs />
+                  <AppRouter />
+                </Box>
+              </BrowserRouter>
+            </CssBaseline>
+        </SnackbarProvider>
+        </MuiThemeProvider>
     </React.Fragment>  
   );
 }

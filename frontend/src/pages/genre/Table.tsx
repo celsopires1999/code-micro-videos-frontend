@@ -1,11 +1,11 @@
-import MUIDataTable, { MUIDataTableColumn } from 'mui-datatables';
 import * as React from 'react';
+import MUIDataTable, { MUIDataTableColumn } from 'mui-datatables';
 import { useEffect, useState } from 'react';
-import { httpVideo } from '../../util/http';
-import { Chip } from '@material-ui/core';
-
+import genreHttp from '../../util/http/genre-http';
 import format from 'date-fns/format';
 import parseISO from 'date-fns/parseISO';
+import { BadgeNo, BadgeYes } from '../../components/Badge';
+import { Genre, ListResponse } from '../../util/models';
 
 const columnsDefinition: MUIDataTableColumn[] = [
     {
@@ -25,8 +25,8 @@ const columnsDefinition: MUIDataTableColumn[] = [
         name: "is_active",
         label: "Ativo?",
         options: {
-            customBodyRender(value,tableMeta, updateValue) {
-                return value ? <Chip label="Sim" color="primary" /> : <Chip label="Não" color="secondary" />;
+            customBodyRender(value, tableMeta, updateValue) {
+                return value ? <BadgeYes /> : <BadgeNo />;
             }
         }
     },
@@ -45,12 +45,26 @@ type Props = {
     
 };
 const Table = (props: Props) => {
-    const [data, setData] = useState([]);
+    const [data, setData] = useState<Genre[]>([]);
 
     useEffect(() => {
-        httpVideo.get('genres').then(
-            response => setData(response.data.data)
-        )
+        let isSubscribed = true;
+
+        (async () => {
+            try {
+                const {data} = await genreHttp.list<ListResponse<Genre>>();
+                if (isSubscribed) {
+                    setData(data.data);
+                }
+            } catch (error) {
+                console.error(error);
+            }           
+        })();
+
+        return () => {
+            isSubscribed = false;
+        }
+
     }, []);
 
     return (
@@ -59,7 +73,6 @@ const Table = (props: Props) => {
                 title=""
                 columns={ columnsDefinition }
                 data={ data }
-                
                 />
         </div>
     );

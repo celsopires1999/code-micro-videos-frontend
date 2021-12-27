@@ -1,54 +1,123 @@
-// import * as React from "react";
-import { Box, Button, ButtonProps, Checkbox, makeStyles, TextField, Theme } from "@material-ui/core";
+import * as React from "react";
+import { Checkbox, FormControlLabel, TextField } from "@material-ui/core";
+import { useSnackbar } from "notistack";
+import { useEffect, useState } from "react";
 import useForm from "react-hook-form";
+import { useParams, useHistory } from "react-router";
 import categoryHttp from "../../util/http/category-http";
+import * as yup from '../../util/vendor/yup';
+import { Category } from "../../util/models";
+import SubmitActions from "../../components/SubmitActions";
+import DefaultForm from "../../components/DefaultForm";
 
-const useStyles = makeStyles((theme: Theme) => {
-    return {
-        submit: {
-            margin: theme.spacing(1)
-        }
-    }
-})
+const validationSchema = yup.object().shape({
+    name: yup.string()
+        .label('Nome')
+        .required()
+        .max(255),
+});
 
 export const Form = () => {
-
-    const classes = useStyles();
-
-    const buttonProps: ButtonProps = {
-        className: classes.submit,
-        variant: "contained",
-    }
-
-    const { register, handleSubmit, getValues } = useForm({
+    const { 
+        register, 
+        handleSubmit, 
+        getValues, 
+        setValue,
+        errors, 
+        reset, 
+        watch,
+        triggerValidation
+    } = useForm({
+        validationSchema,
         defaultValues: {
             is_active: true
         }
     });
-    
-    function onSubmit(formData, event) {
-        console.log(event);
-        // salvar e editar
-        // salvar
-        categoryHttp
-            .create(formData)
-            .then((response) => console.log(response));
+
+    const { enqueueSnackbar } = useSnackbar();
+    const history = useHistory();
+    const {id}:any = useParams();
+    const [category, setCategory] = useState<Category | null>(null);
+    const [loading, setLoading] = useState<boolean>(false);
+
+    useEffect(() => {
+        register({name: 'is_active'})
+    }, [register]);
+
+    useEffect(() => {
+        let isSubscribed = true;
+
+        if (!id){
+            return
+        }
+        setLoading(true);
+        (async function () {
+            try {
+                const {data} = await categoryHttp.get(id);
+                if (isSubscribed) {
+                    setCategory(data.data);
+                    reset(data.data);
+                }
+            } catch (error) {
+                console.error(error);
+                enqueueSnackbar(
+                    `Não foi possível encontrar a categoria: ${id}`,
+                    {variant: 'error'}
+                );              
+            } finally {
+                setLoading(false);
+            }
+        })();
+
+        return () => {
+            isSubscribed = false;
+        }
+
+    }, [id, reset, enqueueSnackbar]);
+
+    async function onSubmit(formData, event) {
+        setLoading(true);
+        try {
+            const http = !category 
+                ? categoryHttp.create(formData) 
+                : categoryHttp.update(id, formData)
+            const {data} = await http;
+            enqueueSnackbar(
+                'Categoria salva com sucesso',
+                {variant: 'success'}
+            )
+            setTimeout(()=>{
+                event
+                ? (
+                    id
+                        ? history.replace(`/categories/${data.data.id}/edit`)
+                        : history.push(`/categories/${data.data.id}/edit`)
+                )
+                : history.push('/categories')
+            })            
+        } catch (error) {
+            console.error(error);
+            enqueueSnackbar(
+                'Não foi possível gravar a categoria',
+                {variant: 'error'}
+            );
+        } finally {
+            setLoading(false);
+        }
     }
 
-    // const onSubmit = (formData) => {
-    //     categoryHttp
-    //         .create(formData)
-    //         .then((response) => console.log(response));
-    // }
-
     return (
-        <form onSubmit={ handleSubmit(onSubmit) }>
+        <DefaultForm GridItemProps={{ xs: 12, md: 6 }} onSubmit={ handleSubmit(onSubmit)} >
             <TextField 
                 name="name"
                 label="Nome"
                 fullWidth
                 variant="outlined"
                 inputRef={ register }
+                error={ errors.name !== undefined }
+                disabled={loading}
+                helperText={errors.name && errors.name.message}
+                InputLabelProps={{shrink: true}}
             />
             <TextField 
                 name="description"
@@ -59,24 +128,32 @@ export const Form = () => {
                 variant="outlined"
                 margin="normal"
                 inputRef={ register }
+                disabled={loading}
+                InputLabelProps={{shrink: true}}
             />
-            <Checkbox 
-                name="is_active"
-                color={ "primary" }
-                inputRef={ register }
-                defaultChecked
+            <FormControlLabel 
+                disabled={loading}
+                control={
+                    <Checkbox 
+                        name="is_active"
+                        color={ "primary" }
+                        onChange={
+                            () => setValue('is_active', !getValues()['is_active'])
+                        }
+                        checked={ (watch('is_active')) as boolean }
+                    />   
+                }
+                label={'Ativo?'}
+                labelPlacement='end'
             />
-            Ativo?
-            <Box dir="rtl">
-                <Button 
-                    color={"primary"}
-                    { ...buttonProps} 
-                    onClick={ () => onSubmit(getValues(), null) }
-                >
-                    Salvar
-                </Button>
-                <Button { ...buttonProps} type="submit">Salvar e continuar editando</Button>
-            </Box>
-        </form>
+            <SubmitActions 
+                disabledButtons={ loading } 
+                handleSave={ () =>
+                    triggerValidation().then(isValid => {
+                        isValid && onSubmit(getValues(), null)
+                    })
+                }
+            />
+        </DefaultForm>
     );
 };
