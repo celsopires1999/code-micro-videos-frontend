@@ -71,6 +71,9 @@ const theme = createTheme({
                 '& svg': {
                     color: '#fff !important'
                 }
+            },
+            toolButton: {
+                color: '#fff'
             }
         },
         MUIDataTableSelectCell: {

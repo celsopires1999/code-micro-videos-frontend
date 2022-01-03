@@ -1,1 +1,15 @@
+
+GET http://host.docker.internal:8000/api/categories?search=xxx
+
+###
+
 GET http://host.docker.internal:8000/api/categories
+
+###
+GET http://host.docker.internal:8000/api/categories?all=
+
+###
+GET http://host.docker.internal:8000/api/categories?all=&search=xxx
+
+###
+GET http://host.docker.internal:8000/api/categories?filter=xxx

@@ -2,11 +2,15 @@
 
 namespace Tests\Stubs\Models;
 
+use App\ModelFilters\CategoryFilter;
+use EloquentFilter\Filterable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
 
 class CategoryStub extends Model
 {
+    use Filterable;
+ 
     protected $table = 'category_stubs';
     protected $fillable = ['name', 'description'];
 
@@ -23,5 +27,10 @@ class CategoryStub extends Model
     public static function dropTable()
     {
         \Schema::dropIfExists('category_stubs');
+    }
+
+    public function modelFilter()
+    {
+        return $this->provideFilter(CategoryFilter::class);
     }
 }

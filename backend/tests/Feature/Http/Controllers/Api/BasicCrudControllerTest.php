@@ -32,7 +32,26 @@ class BasicCrudControllerTest extends TestCase
     {
         /** @var CategoryStub $category */
         $category = CategoryStub::create(['name' => 'test_name', 'description' => 'test_description']);
-        $resource = $this->controller->index();
+
+        /** @var Request $request */
+        $request = \Mockery::mock(Request::class);
+       
+        $request
+            ->shouldReceive('all')
+            ->once()
+            ->andReturn([]);
+
+        $request
+            ->shouldReceive('get')
+            ->once()
+            ->andReturn('20');
+
+        $request
+            ->shouldReceive('has')
+            ->once()
+            ->andReturn(false);
+
+        $resource = $this->controller->index($request);
         $serialized = $resource->response()->getData(true);
         $this->assertEquals(
             [$category->toArray()],
@@ -46,6 +65,7 @@ class BasicCrudControllerTest extends TestCase
     {
         $this->expectException(ValidationException::class);
 
+        /** @var Request $request */
         $request = \Mockery::mock(Request::class);
         $request
             ->shouldReceive('all')
@@ -56,6 +76,7 @@ class BasicCrudControllerTest extends TestCase
 
     public function testStore()
     {
+        /** @var Request $request */
         $request = \Mockery::mock(Request::class);
         $request
             ->shouldReceive('all')
@@ -105,6 +126,7 @@ class BasicCrudControllerTest extends TestCase
     public function testUpdate()
     {
         $category = CategoryStub::create(['name' => 'test_name', 'description' => 'test_description']);
+        /** @var Request $request */
         $request = \Mockery::mock(Request::class);
         $request
             ->shouldReceive('all')
