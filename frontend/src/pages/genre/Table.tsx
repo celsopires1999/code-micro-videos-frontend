@@ -1,11 +1,13 @@
-import * as React from 'react';
+import { IconButton, MuiThemeProvider } from '@material-ui/core';
+import EditIcon from '@material-ui/icons/Edit';
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import genreHttp from '../../util/http/genre-http';
 import format from 'date-fns/format';
 import parseISO from 'date-fns/parseISO';
 import { BadgeNo, BadgeYes } from '../../components/Badge';
 import { Genre, ListResponse } from '../../util/models';
-import DefaultTable, { TableColumn } from '../../components/Table';
+import DefaultTable, { makeActionStyles, TableColumn } from '../../components/Table';
 import { useSnackbar } from 'notistack';
 
 const columnsDefinition: TableColumn[] = [
@@ -55,7 +57,22 @@ const columnsDefinition: TableColumn[] = [
     {
         name: "actions",
         label: "Ações",
-        width: "13%"
+        width: "13%",
+        options: {
+            sort: false,
+            filter: false,
+            customBodyRender: (value, tableMeta) => {
+                return (
+                    <IconButton
+                        color={'secondary'}
+                        component={Link}
+                        to={`/genres/${tableMeta.rowData[0]}/edit`}
+                    >
+                        <EditIcon />
+                    </IconButton>
+                )
+            }
+        }
     },
 ];
 
@@ -95,14 +112,14 @@ const Table = (props: Props) => {
     }, [enqueueSnackbar]);
 
     return (
-        <div>
+        <MuiThemeProvider theme={makeActionStyles(columnsDefinition.length - 1)}>
             <DefaultTable
                 title=""
                 columns={columnsDefinition}
                 data={data}
                 loading={loading}
             />
-        </div>
+        </MuiThemeProvider>
     );
 };
 

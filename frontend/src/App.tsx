@@ -6,7 +6,6 @@ import AppRouter from './routes/AppRouter';
 import Breadcrumbs from './components/Breadcrumbs';
 import theme from './theme';
 import { SnackbarProvider } from './components/SnackbarProvider';
-// import { SnackbarProvider } from 'notistack';
 
 const App: React.FC = () => {
   return (
