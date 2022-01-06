@@ -3,12 +3,13 @@ import MUIDataTable, { MUIDataTableColumn, MUIDataTableOptions, MUIDataTableProp
 import { merge, omit, cloneDeep } from 'lodash';
 import { useTheme } from '@material-ui/styles';
 import { MuiThemeProvider, Theme, useMediaQuery } from '@material-ui/core';
+import DebouncedTableSearch from './DebouncedTableSearch';
 
 export interface TableColumn extends MUIDataTableColumn {
     width?: string;
 }
 
-const defaultOptions: MUIDataTableOptions = {
+const makeDefaultOptions = (debouncedSearchTime?): MUIDataTableOptions => ({
     print: false,
     download: false,
     textLabels: {
@@ -44,11 +45,25 @@ const defaultOptions: MUIDataTableOptions = {
             deleteAria: "Excluir registros selecionados",
         },
     },
-}
+    customSearchRender: (
+        searchText: string,
+        handleSearch: (text: string) => void,
+        hideSearch: () => void,
+        options: any) => {
+        return <DebouncedTableSearch
+            searchText={searchText}
+            onSearch={handleSearch}
+            onHide={hideSearch}
+            options={options}
+            debouncedTime={debouncedSearchTime}
+        />
+    }
+});
 
 export interface TableProps extends MUIDataTableProps {
     columns: TableColumn[];
     loading?: boolean;
+    debouncedSearchTime?: number;
 }
 
 const Table: React.FC<TableProps> = (props) => {
@@ -71,9 +86,6 @@ const Table: React.FC<TableProps> = (props) => {
 
     function applyLoading() {
         const textLabels = (newProps.options as any).textLabels;
-        // textLabels.body.noMatch = newProps.loading === true
-        //     ? 'Carregando...'
-        //     : textLabels.body.noMatch;
         if (newProps.loading) {
             textLabels.body.noMatch = 'Carregando...'
         }
@@ -90,10 +102,11 @@ const Table: React.FC<TableProps> = (props) => {
     const theme = cloneDeep<Theme>(useTheme());
     const isSmOrDown = useMediaQuery(theme.breakpoints.down('sm'));
 
+    const defaultOptions = makeDefaultOptions(props.debouncedSearchTime);
+
     const newProps = merge(
         { options: cloneDeep(defaultOptions) },
         omit(props, 'columns'),
-        // props,
         { columns: extractMUIDataTableColumns(props.columns) },
     );
 
