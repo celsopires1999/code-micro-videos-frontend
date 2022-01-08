@@ -41,7 +41,7 @@ const DebouncedTableSearch = ({ options, searchText, onSearch, onHide, debounced
     } 
 
     useEffect(() => { 
-        dispatchOnSearch(text) 
+        debouncedOnSearch(text);
     },[text]) 
 
     const handleTextChange = event => { 
@@ -49,8 +49,7 @@ const DebouncedTableSearch = ({ options, searchText, onSearch, onHide, debounced
         setText(value); 
     }; 
 
-    // const dispatchOnSearch = useCallback(debounce(value => onSearch(value),500),[]); 
-    const dispatchOnSearch = useCallback(debounce(value => onSearch(value),debouncedTime),[]); 
+    const debouncedOnSearch = useCallback(debounce(value => onSearch(value),debouncedTime),[]); 
 
     const onKeyDown = event => {
         if (event.key === 'Escape') {
