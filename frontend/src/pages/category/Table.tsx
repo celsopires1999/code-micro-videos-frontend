@@ -8,7 +8,8 @@ import { Link } from 'react-router-dom';
 import { BadgeNo, BadgeYes } from '../../components/Badge';
 import DefaultTable, { makeActionStyles, TableColumn } from '../../components/Table';
 import FilterResetButton from '../../components/Table/FilterResetButton';
-import reducer, { INITIAL_STATE, Creators } from '../../store/search';
+import useFilter from '../../hooks/useFilter';
+import reducer, { INITIAL_STATE, Creators } from '../../store/filter';
 import categoryHttp from '../../util/http/category-http';
 import { Category, ListResponse } from '../../util/models';
 
@@ -73,8 +74,7 @@ const Table = () => {
     const [data, setData] = useState<Category[]>([]);
     const [loading, setLoading] = useState<boolean>(false);
     const { enqueueSnackbar } = useSnackbar();
-    const [searchState, dispatch] = useReducer(reducer, INITIAL_STATE);
-    const [totalRecords, setTotalRecords] = useState<number>(0);
+    const {filterState, dispatch, totalRecords, setTotalRecords} = useFilter()
 
     useEffect(() => {
         subscribed.current = true
@@ -83,11 +83,11 @@ const Table = () => {
             subscribed.current = false;
         }
     }, [
-        searchState.search,
-        searchState.pagination.page,
-        searchState.pagination.per_page,
-        searchState.order.sort,
-        searchState.order.dir,
+        filterState.search,
+        filterState.pagination.page,
+        filterState.pagination.per_page,
+        filterState.order.sort,
+        filterState.order.dir,
     ]);
 
     async function getData() {
@@ -95,11 +95,11 @@ const Table = () => {
         try {
             const { data } = await categoryHttp.list<ListResponse<Category>>({
                 queryParams: {
-                    search: cleanSearchText(searchState.search),
-                    page: searchState.pagination.page,
-                    per_page: searchState.pagination.per_page,
-                    sort: searchState.order.sort,
-                    dir: searchState.order.dir,
+                    search: cleanSearchText(filterState.search),
+                    page: filterState.pagination.page,
+                    per_page: filterState.pagination.per_page,
+                    sort: filterState.order.sort,
+                    dir: filterState.order.dir,
                 }
             });
             if (subscribed.current) {
@@ -138,9 +138,9 @@ const Table = () => {
                 debouncedSearchTime={500}
                 options={{
                     serverSide: true,
-                    searchText: searchState.search as any, 
-                    page: searchState.pagination.page - 1,
-                    rowsPerPage: searchState.pagination.per_page,
+                    searchText: filterState.search as any, 
+                    page: filterState.pagination.page - 1,
+                    rowsPerPage: filterState.pagination.per_page,
                     count: totalRecords,
                     customToolbar: () => (
                         <FilterResetButton
