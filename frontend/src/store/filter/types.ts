@@ -43,3 +43,5 @@ export interface SetOrderAction extends AnyAction {
 
 export interface SetReset extends AnyAction {
 }
+
+export type Actions = SetSearchAction | SetPageAction | SetPerPageAction | SetOrderAction;

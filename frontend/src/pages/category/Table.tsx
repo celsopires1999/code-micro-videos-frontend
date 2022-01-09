@@ -3,13 +3,13 @@ import EditIcon from '@material-ui/icons/Edit';
 import format from 'date-fns/format';
 import parseISO from 'date-fns/parseISO';
 import { useSnackbar } from 'notistack';
-import { useEffect, useState, useRef, useReducer } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { BadgeNo, BadgeYes } from '../../components/Badge';
 import DefaultTable, { makeActionStyles, TableColumn } from '../../components/Table';
 import FilterResetButton from '../../components/Table/FilterResetButton';
 import useFilter from '../../hooks/useFilter';
-import reducer, { INITIAL_STATE, Creators } from '../../store/filter';
+import { Creators } from '../../store/filter';
 import categoryHttp from '../../util/http/category-http';
 import { Category, ListResponse } from '../../util/models';
 
@@ -74,7 +74,19 @@ const Table = () => {
     const [data, setData] = useState<Category[]>([]);
     const [loading, setLoading] = useState<boolean>(false);
     const { enqueueSnackbar } = useSnackbar();
-    const {filterState, dispatch, totalRecords, setTotalRecords} = useFilter()
+    const { 
+        columns,
+        filterManager,
+        filterState,
+        dispatch,
+        totalRecords,
+        setTotalRecords,
+    } = useFilter({
+        columns: columnsDefinition,
+        debouncedTime: 500,
+        rowsPerPage: 10,
+        rowsPerPageOptions: [10, 25, 50]
+    });
 
     useEffect(() => {
         subscribed.current = true
@@ -132,13 +144,13 @@ const Table = () => {
         <MuiThemeProvider theme={makeActionStyles(columnsDefinition.length - 1)}>
             <DefaultTable
                 title=""
-                columns={columnsDefinition}
+                columns={columns}
                 data={data}
                 loading={loading}
                 debouncedSearchTime={500}
                 options={{
                     serverSide: true,
-                    searchText: filterState.search as any, 
+                    searchText: filterState.search as any,
                     page: filterState.pagination.page - 1,
                     rowsPerPage: filterState.pagination.per_page,
                     count: totalRecords,
@@ -149,14 +161,11 @@ const Table = () => {
                             }}
                         />
                     ),
-                    onSearchChange: (value) => dispatch(Creators.setSearch({ search: value as any })), //ver se preciso desse as any
-                    onChangePage: (page) => dispatch(Creators.setPage({ page: page + 1 })),
-                    onChangeRowsPerPage: (perPage) => dispatch(Creators.setPerPage({ per_page: perPage })),
-                    onColumnSortChange: (changedColumn: string, direction: 'asc' | 'desc') =>
-                        dispatch(Creators.setOrder({
-                            sort: changedColumn,
-                            dir: direction.includes('desc') ? 'desc' : 'asc',
-                        })),
+                    onSearchChange: (value) => filterManager.changeSearch(value),
+                    onChangePage: (page) => filterManager.changePage(page + 1),
+                    onChangeRowsPerPage: (perPage) => filterManager.changeRowsPerPage(perPage),
+                    onColumnSortChange: (changedColumn: string, direction: string) =>
+                        filterManager.changeColumnSort(changedColumn, direction)
                 }}
             />
         </MuiThemeProvider>
