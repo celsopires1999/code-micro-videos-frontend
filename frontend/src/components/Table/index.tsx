@@ -114,7 +114,7 @@ const Table: React.FC<TableProps> = (props) => {
     applyResponsive();
 
     const originalProps = getOriginalMuiDataTableProps();
-    console.log(originalProps);
+
     return (
         <MuiThemeProvider theme={theme}>
             <MUIDataTable

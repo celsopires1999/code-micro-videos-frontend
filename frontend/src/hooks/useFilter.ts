@@ -2,6 +2,7 @@ import { MUIDataTableColumn } from "mui-datatables";
 import { Dispatch, Reducer, useReducer, useState } from "react";
 import reducer, { Creators, INITIAL_STATE } from "../store/filter";
 import { Actions as FilterActions, State as FilterState } from '../store/filter/types'
+import { useDebounce } from 'use-debounce';
 
 interface FiltroManagerOptions {
     columns: MUIDataTableColumn[];
@@ -15,6 +16,7 @@ export default function useFilter(options: FiltroManagerOptions) {
     const filterManager = new FilterManager(options);
     //TODO: pegar o state da url
     const [filterState, dispatch] = useReducer<Reducer<FilterState, FilterActions>>(reducer, INITIAL_STATE);
+    const [debouncedFilterState] = useDebounce(filterState, options.debouncedTime);
     const [totalRecords, setTotalRecords] = useState<number>(0);
     filterManager.state = filterState;
     filterManager.dispatch = dispatch;
@@ -25,6 +27,7 @@ export default function useFilter(options: FiltroManagerOptions) {
         columns: filterManager.columns,
         filterManager,
         filterState,
+        debouncedFilterState,
         dispatch,
         totalRecords,
         setTotalRecords
@@ -37,18 +40,16 @@ export class FilterManager {
     columns: MUIDataTableColumn[];
     rowsPerPage: number;
     rowsPerPageOptions: number[];
-    debouncedTime: number;
 
     constructor(options: FiltroManagerOptions) {
-        const { columns, rowsPerPage, rowsPerPageOptions, debouncedTime } = options;
+        const { columns, rowsPerPage, rowsPerPageOptions } = options;
         this.columns = columns;
         this.rowsPerPage = rowsPerPage;
         this.rowsPerPageOptions = rowsPerPageOptions;
-        this.debouncedTime = debouncedTime;
     }
 
     changeSearch(value) {
-        this.dispatch(Creators.setSearch({ search: value })); 
+        this.dispatch(Creators.setSearch({ search: value }));
     }
 
     changePage(page) {
@@ -79,5 +80,13 @@ export class FilterManager {
                 }
                 : column;
         });
+    }
+
+    cleanSearchText(text) {
+        let newText = text;
+        if (text && text.value !== undefined) {
+            newText = text.value
+        }
+        return newText;
     }
 }

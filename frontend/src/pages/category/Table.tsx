@@ -69,6 +69,9 @@ const columnsDefinition: TableColumn[] = [
     },
 ];
 
+const debouncedTime = 300;
+const debouncedSearchTime = 300;
+
 const Table = () => {
     const subscribed = useRef(true);
     const [data, setData] = useState<Category[]>([]);
@@ -78,12 +81,13 @@ const Table = () => {
         columns,
         filterManager,
         filterState,
+        debouncedFilterState,
         dispatch,
         totalRecords,
         setTotalRecords,
     } = useFilter({
         columns: columnsDefinition,
-        debouncedTime: 500,
+        debouncedTime: debouncedTime,
         rowsPerPage: 10,
         rowsPerPageOptions: [10, 25, 50]
     });
@@ -95,11 +99,11 @@ const Table = () => {
             subscribed.current = false;
         }
     }, [
-        filterState.search,
-        filterState.pagination.page,
-        filterState.pagination.per_page,
-        filterState.order.sort,
-        filterState.order.dir,
+        filterManager.cleanSearchText(debouncedFilterState.search),
+        debouncedFilterState.pagination.page,
+        debouncedFilterState.pagination.per_page,
+        debouncedFilterState.order.sort,
+        debouncedFilterState.order.dir,
     ]);
 
     async function getData() {
@@ -107,7 +111,7 @@ const Table = () => {
         try {
             const { data } = await categoryHttp.list<ListResponse<Category>>({
                 queryParams: {
-                    search: cleanSearchText(filterState.search),
+                    search: filterManager.cleanSearchText(filterState.search),
                     page: filterState.pagination.page,
                     per_page: filterState.pagination.per_page,
                     sort: filterState.order.sort,
@@ -132,14 +136,6 @@ const Table = () => {
         }
     }
 
-    function cleanSearchText(text) {
-        let newText = text;
-        if (text && text.value !== undefined) {
-            newText = text.value
-        }
-        return newText;
-    }
-
     return (
         <MuiThemeProvider theme={makeActionStyles(columnsDefinition.length - 1)}>
             <DefaultTable
@@ -147,7 +143,7 @@ const Table = () => {
                 columns={columns}
                 data={data}
                 loading={loading}
-                debouncedSearchTime={500}
+                debouncedSearchTime={debouncedSearchTime}
                 options={{
                     serverSide: true,
                     searchText: filterState.search as any,
@@ -162,7 +158,7 @@ const Table = () => {
                         />
                     ),
                     onSearchChange: (value) => filterManager.changeSearch(value),
-                    onChangePage: (page) => filterManager.changePage(page + 1),
+                    onChangePage: (page) => filterManager.changePage(page),
                     onChangeRowsPerPage: (perPage) => filterManager.changeRowsPerPage(perPage),
                     onColumnSortChange: (changedColumn: string, direction: string) =>
                         filterManager.changeColumnSort(changedColumn, direction)
