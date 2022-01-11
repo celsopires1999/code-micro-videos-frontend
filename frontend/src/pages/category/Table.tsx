@@ -71,13 +71,15 @@ const columnsDefinition: TableColumn[] = [
 
 const debouncedTime = 300;
 const debouncedSearchTime = 300;
+const rowsPerPage = 15;
+const rowsPerPageOptions = [15, 25, 50];
 
 const Table = () => {
     const subscribed = useRef(true);
     const [data, setData] = useState<Category[]>([]);
     const [loading, setLoading] = useState<boolean>(false);
     const { enqueueSnackbar } = useSnackbar();
-    const { 
+    const {
         columns,
         filterManager,
         filterState,
@@ -88,8 +90,8 @@ const Table = () => {
     } = useFilter({
         columns: columnsDefinition,
         debouncedTime: debouncedTime,
-        rowsPerPage: 10,
-        rowsPerPageOptions: [10, 25, 50]
+        rowsPerPage,
+        rowsPerPageOptions
     });
 
     useEffect(() => {
@@ -150,6 +152,7 @@ const Table = () => {
                     searchText: filterState.search as any,
                     page: filterState.pagination.page - 1,
                     rowsPerPage: filterState.pagination.per_page,
+                    rowsPerPageOptions,
                     count: totalRecords,
                     customToolbar: () => (
                         <FilterResetButton
