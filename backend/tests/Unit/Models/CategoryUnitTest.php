@@ -5,6 +5,7 @@ use Tests\TestCase;
 use App\Models\Category;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Models\Traits\Uuid;
+use EloquentFilter\Filterable;
 
 class CategoryUnitTest extends TestCase
 {
@@ -29,7 +30,8 @@ class CategoryUnitTest extends TestCase
     {
         $traits = [
             SoftDeletes::class, 
-            Uuid::class
+            Uuid::class,
+            Filterable::class
         ];
 
         $categoryTraits = array_keys(class_uses(Category::class));

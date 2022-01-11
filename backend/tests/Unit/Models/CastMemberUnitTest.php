@@ -6,6 +6,7 @@ use Tests\TestCase;
 use App\Models\CastMember;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Models\Traits\Uuid;
+use EloquentFilter\Filterable;
 
 class CastMemberUnitTest extends TestCase
 {
@@ -31,7 +32,8 @@ class CastMemberUnitTest extends TestCase
     {
         $traits = [
             Uuid::class,
-            SoftDeletes::class
+            SoftDeletes::class,
+            Filterable::class
         ];
 
         $castMemberTraits = array_keys(class_uses(CastMember::class));
