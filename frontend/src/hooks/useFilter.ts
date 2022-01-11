@@ -5,6 +5,7 @@ import { Actions as FilterActions, State as FilterState } from '../store/filter/
 import { useDebounce } from 'use-debounce';
 import { useHistory } from 'react-router';
 import { History } from 'history';
+import { isEqual } from 'lodash';
 
 interface FilterManagerOptions {
     columns: MUIDataTableColumn[];
@@ -107,6 +108,11 @@ export class FilterManager {
                 search: this.cleanSearchText(this.state.search)
             }
         };
+        const oldState = this.history.location.state;
+        const newState = this.state;
+        if (isEqual(oldState, newState)) {
+            return
+        }
         this.history.push(newLocation);
     }
 

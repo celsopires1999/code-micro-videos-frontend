@@ -140,7 +140,6 @@ class DebouncedTableSearch extends React.PureComponent {
 
     handleTextChange = event => {
         const value = event.target.value;
-        console.log(value);
         this.setState({
             text: value
         }, () => this.debouncedOnSearch(value))
