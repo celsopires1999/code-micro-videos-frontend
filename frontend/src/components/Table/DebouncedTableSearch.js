@@ -185,7 +185,6 @@ class DebouncedTableSearch extends React.PureComponent {
     render() {
         const {classes, options, onHide} = this.props;
         let value = this.state.text;
-        console.log(value);
         return (
             <Grow appear in={true} timeout={300}>
                 <div className={classes.main} ref={el => (this.rootRef = el)}>

@@ -20,12 +20,16 @@ const columnsDefinition: TableColumn[] = [
         width: "30%",
         options: {
             sort: false,
+            filter: false
         }
     },
     {
         name: "name",
         label: "Nome",
         width: "43%",
+        options: {
+            filter: false
+        }
     },
     {
         name: "is_active",
@@ -42,6 +46,7 @@ const columnsDefinition: TableColumn[] = [
         label: "Criado em",
         width: "10%",
         options: {
+            filter: false,
             customBodyRender(value, tableMeta, updateValue) {
                 return <span>{format(parseISO(value), 'dd/MM/yyyy')}</span>
             }
@@ -91,7 +96,7 @@ const Table = () => {
         columns: columnsDefinition,
         debouncedTime: debouncedTime,
         rowsPerPage,
-        rowsPerPageOptions
+        rowsPerPageOptions,
     });
 
     useEffect(() => {
@@ -157,7 +162,7 @@ const Table = () => {
                     customToolbar: () => (
                         <FilterResetButton
                             handleClick={() => {
-                                dispatch(Creators.setReset())
+                                dispatch(Creators.setReset(filterManager.getStateFromURL()))
                             }}
                         />
                     ),

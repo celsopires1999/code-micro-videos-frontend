@@ -14,6 +14,13 @@ interface FilterManagerOptions {
     rowsPerPageOptions: number[];
     debouncedTime: number;
     history: History;
+    extraFilter?: ExtraFilter;
+}
+
+interface ExtraFilter {
+    getStateFromURL: (queryParams: URLSearchParams) => any;
+    formatSearchParams: (debouncedState: FilterState) => any;
+    createValidationsSchema: () => any;
 }
 
 interface UseFilterOptions extends Omit<FilterManagerOptions, 'history'> { }
@@ -22,7 +29,7 @@ export default function useFilter(options: UseFilterOptions) {
 
     const history = useHistory();
     const filterManager = new FilterManager({ ...options, history });
-    const INITIAL_STATE = filterManager.getStateFromUrl();
+    const INITIAL_STATE = filterManager.getStateFromURL();
     const [filterState, dispatch] = useReducer<Reducer<FilterState, FilterActions>>(reducer, INITIAL_STATE);
     const [debouncedFilterState] = useDebounce(filterState, options.debouncedTime);
     const [totalRecords, setTotalRecords] = useState<number>(0);
@@ -54,13 +61,17 @@ export class FilterManager {
     rowsPerPage: number;
     rowsPerPageOptions: number[];
     history: History;
+    extraFilter?: ExtraFilter;
 
     constructor(options: FilterManagerOptions) {
-        const { columns, rowsPerPage, rowsPerPageOptions, history } = options;
+        const {
+            columns, rowsPerPage, rowsPerPageOptions, history, extraFilter
+        } = options;
         this.columns = columns;
         this.rowsPerPage = rowsPerPage;
         this.rowsPerPageOptions = rowsPerPageOptions;
         this.history = history;
+        this.extraFilter = extraFilter;
         this.createValidationSchema();
     }
 
@@ -131,7 +142,7 @@ export class FilterManager {
         this.history.push(newLocation);
     }
 
-    getStateFromUrl() {
+    getStateFromURL() {
         const queryParams = new URLSearchParams(this.history.location.search.substring(1));
         return this.schema.cast({
             search: queryParams.get('search'),
@@ -142,7 +153,12 @@ export class FilterManager {
             order: {
                 sort: queryParams.get('sort'),
                 dir: queryParams.get('dir'),
-            }
+            },
+            ...(
+                this.extraFilter && {
+                    extraFilter: this.extraFilter.getStateFromURL(queryParams)
+                }
+            )
         })
     }
 
@@ -157,6 +173,9 @@ export class FilterManager {
                     sort: this.state.order.sort,
                     dir: this.state.order.dir
                 }
+            ),
+            ...(
+                this.extraFilter && this.extraFilter.formatSearchParams(this.state)
             )
         }
     }
@@ -190,7 +209,12 @@ export class FilterManager {
                     .transform(value => !value || !['asc', 'desc'].includes(value.toLowerCase()) ? undefined : value)
                     .default(null),
             }),
-            
+            ...(
+                this.extraFilter && {
+                    extraFilter: this.extraFilter.createValidationsSchema()
+                }
+            )
+
         });
     }
 }

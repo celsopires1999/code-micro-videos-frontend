@@ -3,17 +3,18 @@ import EditIcon from '@material-ui/icons/Edit';
 import format from 'date-fns/format';
 import parseISO from 'date-fns/parseISO';
 import { useSnackbar } from 'notistack';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import DefaultTable, { makeActionStyles, TableColumn } from '../../components/Table';
+import FilterResetButton from '../../components/Table/FilterResetButton';
+import useFilter from '../../hooks/useFilter';
+import { Creators } from '../../store/filter';
 import castMemberHttp from '../../util/http/cast-member-http';
-import { CastMember, ListResponse } from '../../util/models';
+import { CastMember, CastMemberTypeMap, ListResponse } from '../../util/models';
+import * as yup from '../../util/vendor/yup';
 
 
-const CastMemberTypeMap = {
-    1: 'Diretor',
-    2: 'Ator'
-}
+const castMemberNames = Object.values(CastMemberTypeMap);
 
 const columnsDefinition: TableColumn[] = [
     {
@@ -70,49 +71,132 @@ const columnsDefinition: TableColumn[] = [
         }
     },
 ];
+const debouncedTime = 300;
+const debouncedSearchTime = 300;
+const rowsPerPage = 15;
+const rowsPerPageOptions = [15, 25, 50];
 
-type Props = {
-
-};
-const Table = (props: Props) => {
+const Table = () => {
+    const subscribed = useRef(true);
     const [data, setData] = useState<CastMember[]>([]);
     const [loading, setLoading] = useState<boolean>(false);
     const { enqueueSnackbar } = useSnackbar();
+    const {
+        columns,
+        filterManager,
+        filterState,
+        debouncedFilterState,
+        dispatch,
+        totalRecords,
+        setTotalRecords,
+    } = useFilter({
+        columns: columnsDefinition,
+        debouncedTime: debouncedTime,
+        rowsPerPage,
+        rowsPerPageOptions,
+        extraFilter: {
+            createValidationsSchema: () => {
+                return yup.object().shape({
+                    type: yup.string()
+                        .nullable()
+                        .transform(value => {
+                            console.log('value: ', value)
+                            return !value || !castMemberNames.includes(value) ? undefined : value;
+                        })
+                        .default(null)
+                })
+            },
+            formatSearchParams: (debouncedFilterState) => {
+                return debouncedFilterState.extraFilter
+                    ? {
+                        ...(
+                            debouncedFilterState.extraFilter.type &&
+                            { type: debouncedFilterState.extraFilter.type }
+                        )
+                    }
+                    : undefined
+            },
+            getStateFromURL: (queryParams) => {
+                return {
+                    type: queryParams.get('type')
+                }
+            }
+        },
+    });
 
     useEffect(() => {
-        let isSubscribed = true;
-
-        (async () => {
-            setLoading(true);
-            try {
-                const { data } = await castMemberHttp.list<ListResponse<CastMember>>();
-                if (isSubscribed) {
-                    setData(data.data)
-                }
-            } catch (error) {
-                console.error(error);
-                enqueueSnackbar(
-                    `Não foi possível encontrar as informações`,
-                    { variant: 'error' }
-                );
-            } finally {
-                setLoading(false);
-            }
-        })();
-
+        subscribed.current = true
+        filterManager.pushHistory();
+        getData();
         return () => {
-            isSubscribed = false;
+            subscribed.current = false;
         }
+    }, [
+        filterManager.cleanSearchText(debouncedFilterState.search),
+        debouncedFilterState.pagination.page,
+        debouncedFilterState.pagination.per_page,
+        debouncedFilterState.order.sort,
+        debouncedFilterState.order.dir,
+    ]);
 
-    }, [enqueueSnackbar]);
+    async function getData() {
+        setLoading(true);
+        try {
+            const { data } = await castMemberHttp.list<ListResponse<CastMember>>({
+                queryParams: {
+                    search: filterManager.cleanSearchText(filterState.search),
+                    page: filterState.pagination.page,
+                    per_page: filterState.pagination.per_page,
+                    sort: filterState.order.sort,
+                    dir: filterState.order.dir,
+                }
+            });
+            if (subscribed.current) {
+                setData(data.data);
+                setTotalRecords(data.meta.total);
+            }
+        } catch (error) {
+            console.error(error);
+            if (castMemberHttp.isCancelledRequest(error)) {
+                return;
+            }
+            enqueueSnackbar(
+                `Não foi possível encontrar as informações`,
+                { variant: 'error' }
+            );
+        } finally {
+            setLoading(false);
+        }
+    }
 
     return (
         <MuiThemeProvider theme={makeActionStyles(columnsDefinition.length - 1)}>
             <DefaultTable
                 title=""
-                columns={columnsDefinition}
+                columns={columns}
                 data={data}
                 loading={loading}
+                debouncedSearchTime={debouncedSearchTime}
+                options={{
+                    serverSide: true,
+                    searchText: filterState.search as any,
+                    page: filterState.pagination.page - 1,
+                    rowsPerPage: filterState.pagination.per_page,
+                    rowsPerPageOptions,
+                    count: totalRecords,
+                    customToolbar: () => (
+                        <FilterResetButton
+                            handleClick={() => {
+                                dispatch(Creators.setReset(filterManager.getStateFromURL()))
+                            }}
+                        />
+                    ),
+                    onSearchChange: (value) => filterManager.changeSearch(value),
+                    onChangePage: (page) => filterManager.changePage(page),
+                    onChangeRowsPerPage: (perPage) => filterManager.changeRowsPerPage(perPage),
+                    onColumnSortChange: (changedColumn: string, direction: string) =>
+                        filterManager.changeColumnSort(changedColumn, direction)
+                }}
             />
         </MuiThemeProvider>
     );
