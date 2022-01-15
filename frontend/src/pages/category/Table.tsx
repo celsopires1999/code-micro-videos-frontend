@@ -36,6 +36,9 @@ const columnsDefinition: TableColumn[] = [
         label: "Ativo?",
         width: "4%",
         options: {
+            filterOptions: {
+                names: ['Sim', 'Não']
+            },
             customBodyRender(value, tableMeta, updateValue) {
                 return value ? <BadgeYes /> : <BadgeNo />;
             }

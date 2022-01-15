@@ -12,6 +12,7 @@ import { Creators } from '../../store/filter';
 import castMemberHttp from '../../util/http/cast-member-http';
 import { CastMember, CastMemberTypeMap, ListResponse } from '../../util/models';
 import * as yup from '../../util/vendor/yup';
+import { invert } from 'lodash';
 
 
 const castMemberNames = Object.values(CastMemberTypeMap);
@@ -22,19 +23,26 @@ const columnsDefinition: TableColumn[] = [
         label: "ID",
         width: "30%",
         options: {
-            sort: false
+            sort: false,
+            filter: false
         }
     },
     {
         name: "name",
         label: "Nome",
-        width: "43%"
+        width: "43%",
+        options: {
+            filter: false
+        }
     },
     {
         name: "type",
         label: "Tipo",
         width: "4%",
         options: {
+            filterOptions: {
+                names: castMemberNames
+            },
             customBodyRender(value, tableMeta, updateValue) {
                 return CastMemberTypeMap[value];
             }
@@ -45,6 +53,7 @@ const columnsDefinition: TableColumn[] = [
         label: "Criado em",
         width: "10%",
         options: {
+            filter: false,
             customBodyRender(value, tableMeta, updateValue) {
                 return <span>{format(parseISO(value), 'dd/MM/yyyy')}</span>
             }
@@ -100,7 +109,6 @@ const Table = () => {
                     type: yup.string()
                         .nullable()
                         .transform(value => {
-                            console.log('value: ', value)
                             return !value || !castMemberNames.includes(value) ? undefined : value;
                         })
                         .default(null)
@@ -124,6 +132,16 @@ const Table = () => {
         },
     });
 
+    const indexColumnType = columns.findIndex(c => c.name === 'type');
+    const columnType = columns[indexColumnType];
+    const typeFilterValue = filterState.extraFilter && filterState.extraFilter.type as never;
+    (columnType.options as any).filterList = typeFilterValue ? [typeFilterValue] : [];
+
+    const serverSideFilterList = columns.map(column => []);
+    if (typeFilterValue) {
+        serverSideFilterList[indexColumnType] = [typeFilterValue];
+    }
+
     useEffect(() => {
         subscribed.current = true
         filterManager.pushHistory();
@@ -135,8 +153,8 @@ const Table = () => {
         filterManager.cleanSearchText(debouncedFilterState.search),
         debouncedFilterState.pagination.page,
         debouncedFilterState.pagination.per_page,
-        debouncedFilterState.order.sort,
-        debouncedFilterState.order.dir,
+        debouncedFilterState.order,
+        JSON.stringify(debouncedFilterState.extraFilter)
     ]);
 
     async function getData() {
@@ -149,6 +167,11 @@ const Table = () => {
                     per_page: filterState.pagination.per_page,
                     sort: filterState.order.sort,
                     dir: filterState.order.dir,
+                    ...(
+                        debouncedFilterState.extraFilter &&
+                        debouncedFilterState.extraFilter.type &&
+                        { type: invert(CastMemberTypeMap)[debouncedFilterState.extraFilter.type] }
+                    )
                 }
             });
             if (subscribed.current) {
@@ -184,6 +207,12 @@ const Table = () => {
                     rowsPerPage: filterState.pagination.per_page,
                     rowsPerPageOptions,
                     count: totalRecords,
+                    onFilterChange: (column: any, filterList) => {
+                        const columnIndex = columns.findIndex(c => c.name === column);
+                        filterManager.changeExtraFilter({
+                            [column]: filterList[columnIndex].length ? filterList[columnIndex][0] : null
+                        })
+                    },
                     customToolbar: () => (
                         <FilterResetButton
                             handleClick={() => {

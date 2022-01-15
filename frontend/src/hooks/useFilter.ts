@@ -94,6 +94,10 @@ export class FilterManager {
         }))
     }
 
+    changeExtraFilter(data) {
+        this.dispatch(Creators.updateExtraFilter(data));
+    }
+
     applyOrderInColumns() {
         this.columns = this.columns.map(column => {
             return column.name === this.state.order.sort
