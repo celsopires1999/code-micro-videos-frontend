@@ -2,6 +2,8 @@
 
 namespace App\ModelFilters;
 
+use App\Models\CastMember;
+
 class CastMemberFilter extends DefaultModelFilter
 {
     protected $sortable = ['name', 'type', 'created_at'];
@@ -11,8 +13,11 @@ class CastMemberFilter extends DefaultModelFilter
         $this->where('name', 'LIKE', "%$search%");
     }
 
-    public function setup()
+    public function type($type)
     {
-        $this->blacklistMethod('isSortable');
+        $type_ = (int)$type;
+        if(in_array($type_, CastMember::$types)) {
+            $this->where('type', $type_);
+        }
     }
 }

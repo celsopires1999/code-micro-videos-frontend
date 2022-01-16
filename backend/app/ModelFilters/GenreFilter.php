@@ -2,6 +2,8 @@
 
 namespace App\ModelFilters;
 
+use Illuminate\Database\Eloquent\Builder;
+
 class GenreFilter extends DefaultModelFilter
 {
     protected $sortable = ['name', 'is_active', 'created_at'];
@@ -11,8 +13,13 @@ class GenreFilter extends DefaultModelFilter
         $this->where('name', 'LIKE', "%$search%");
     }
 
-    public function setup()
+    public function categories($categories)
     {
-        $this->blacklistMethod('isSortable');
+        $idsOrNames = explode(",", $categories);
+        $this->whereHas('categories', function (Builder $query) use ($idsOrNames) {
+            $query
+                ->whereIn('id', $idsOrNames)
+                ->orWhereIn('name', $idsOrNames);
+        });
     }
 }
