@@ -1,10 +1,6 @@
 import * as Typings from "./types";
 import { createActions, createReducer } from 'reduxsauce';
 
-// com a versão que o Luiz trabalhou no curso, houve um erro por causa de problema no type
-// do reduxsauce, como não estou com esse problema, acredito que foi corrigo, mas se precisar
-// a solução está na aula "Integração do redux sauce com o sistema de filtro aos 15 minutos" 
-
 export const { Types, Creators } = createActions<{
     SET_SEARCH: string,
     SET_PAGE: string,
@@ -96,14 +92,15 @@ function setOrder(state = INITIAL_STATE, action: Typings.SetOrderAction): Typing
     }
 }
 
-function setReset(state = INITIAL_STATE, action): Typings.State {
-    return {
-        ...INITIAL_STATE,
-        search: {value: null, update: true}
-    }
+function setReset(state = INITIAL_STATE, action: Typings.SetResetAction): Typings.State {
+    // return {
+    //     ...INITIAL_STATE,
+    //     search: {value: null, update: true}
+    // }
+    return action.payload.state;
 }
 
-function updateExtraFilter(state = INITIAL_STATE, action): Typings.State {
+function updateExtraFilter(state = INITIAL_STATE, action: Typings.UpdateExtraFilterAction): Typings.State {
     return {
         ...state,
         extraFilter: {

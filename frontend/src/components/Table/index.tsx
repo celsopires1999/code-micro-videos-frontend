@@ -5,10 +5,6 @@ import { useTheme } from '@material-ui/styles';
 import { MuiThemeProvider, Theme, useMediaQuery } from '@material-ui/core';
 import DebouncedTableSearch from './DebouncedTableSearch';
 
-export interface TableColumn extends MUIDataTableColumn {
-    width?: string;
-}
-
 const makeDefaultOptions = (debouncedSearchTime?): MUIDataTableOptions => ({
     print: false,
     download: false,
@@ -60,13 +56,23 @@ const makeDefaultOptions = (debouncedSearchTime?): MUIDataTableOptions => ({
     }
 });
 
-export interface TableProps extends MUIDataTableProps {
+export interface TableColumn extends MUIDataTableColumn {
+    width?: string;
+}
+
+export interface MuiDataTableRefComponent {
+    changePage: (page: number) => void;
+    changeRowsPerPage: (rowsPerPage: number) => void;
+}
+
+export interface TableProps extends MUIDataTableProps, React.RefAttributes<MuiDataTableRefComponent> {
     columns: TableColumn[];
     loading?: boolean;
     debouncedSearchTime?: number;
 }
 
-const Table: React.FC<TableProps> = (props) => {
+// const Table: React.FC<TableProps> = (props) => {
+const Table = React.forwardRef<MuiDataTableRefComponent, TableProps>((props, ref) => {
 
     function extractMUIDataTableColumns(columns: TableColumn[]): MUIDataTableColumn[] {
         setColumnsWidth(columns);
@@ -86,9 +92,12 @@ const Table: React.FC<TableProps> = (props) => {
 
     function applyLoading() {
         const textLabels = (newProps.options as any).textLabels;
-        if (newProps.loading) {
-            textLabels.body.noMatch = 'Carregando...'
-        }
+        // if (newProps.loading) {
+        //     textLabels.body.noMatch = 'Carregando...'
+        // }
+        textLabels.body.noMatch = newProps.loading === true
+            ? 'Carregando...'
+            : textLabels.body.noMatch;
     }
 
     function applyResponsive() {
@@ -96,7 +105,11 @@ const Table: React.FC<TableProps> = (props) => {
     }
 
     function getOriginalMuiDataTableProps() {
-        return omit(newProps, 'loading');
+        // return omit(newProps, 'loading');
+        return {
+            ...omit(newProps, 'loading'),
+            ref
+        }
     }
 
     const theme = cloneDeep<Theme>(useTheme());
@@ -122,7 +135,7 @@ const Table: React.FC<TableProps> = (props) => {
             />
         </MuiThemeProvider>
     );
-};
+});
 
 export default Table;
 

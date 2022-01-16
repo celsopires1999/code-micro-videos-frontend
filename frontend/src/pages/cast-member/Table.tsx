@@ -5,10 +5,10 @@ import parseISO from 'date-fns/parseISO';
 import { useSnackbar } from 'notistack';
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import DefaultTable, { makeActionStyles, TableColumn } from '../../components/Table';
+import DefaultTable, { makeActionStyles, TableColumn, MuiDataTableRefComponent } from '../../components/Table';
 import FilterResetButton from '../../components/Table/FilterResetButton';
 import useFilter from '../../hooks/useFilter';
-import { Creators } from '../../store/filter';
+// import { Creators } from '../../store/filter';
 import castMemberHttp from '../../util/http/cast-member-http';
 import { CastMember, CastMemberTypeMap, ListResponse } from '../../util/models';
 import * as yup from '../../util/vendor/yup';
@@ -90,12 +90,14 @@ const Table = () => {
     const [data, setData] = useState<CastMember[]>([]);
     const [loading, setLoading] = useState<boolean>(false);
     const { enqueueSnackbar } = useSnackbar();
+    const tableRef = useRef() as React.MutableRefObject<MuiDataTableRefComponent>;
+
     const {
         columns,
         filterManager,
         filterState,
         debouncedFilterState,
-        dispatch,
+        // dispatch,
         totalRecords,
         setTotalRecords,
     } = useFilter({
@@ -103,6 +105,7 @@ const Table = () => {
         debouncedTime: debouncedTime,
         rowsPerPage,
         rowsPerPageOptions,
+        tableRef,
         extraFilter: {
             createValidationsSchema: () => {
                 return yup.object().shape({
@@ -136,11 +139,10 @@ const Table = () => {
     const columnType = columns[indexColumnType];
     const typeFilterValue = filterState.extraFilter && filterState.extraFilter.type as never;
     (columnType.options as any).filterList = typeFilterValue ? [typeFilterValue] : [];
-
-    const serverSideFilterList = columns.map(column => []);
-    if (typeFilterValue) {
-        serverSideFilterList[indexColumnType] = [typeFilterValue];
-    }
+    // const serverSideFilterList = columns.map(column => []);
+    // if (typeFilterValue) {
+    //     serverSideFilterList[indexColumnType] = [typeFilterValue];
+    // }
 
     useEffect(() => {
         subscribed.current = true
@@ -200,6 +202,7 @@ const Table = () => {
                 data={data}
                 loading={loading}
                 debouncedSearchTime={debouncedSearchTime}
+                ref={tableRef}
                 options={{
                     serverSide: true,
                     searchText: filterState.search as any,
@@ -207,16 +210,18 @@ const Table = () => {
                     rowsPerPage: filterState.pagination.per_page,
                     rowsPerPageOptions,
                     count: totalRecords,
-                    onFilterChange: (column: any, filterList) => {
-                        const columnIndex = columns.findIndex(c => c.name === column);
+                    onFilterChange: (column: any, filterList, type) => {
+                        const columnLocal = !column ? 'type'  : column
+                        const columnIndex = columns.findIndex(c => c.name === columnLocal);
                         filterManager.changeExtraFilter({
-                            [column]: filterList[columnIndex].length ? filterList[columnIndex][0] : null
+                            [columnLocal]: filterList[columnIndex].length ? filterList[columnIndex][0] : null
                         })
                     },
                     customToolbar: () => (
                         <FilterResetButton
                             handleClick={() => {
-                                dispatch(Creators.setReset(filterManager.getStateFromURL()))
+                                // dispatch(Creators.setReset(filterManager.getStateFromURL()))
+                                filterManager.resetFilter()
                             }}
                         />
                     ),

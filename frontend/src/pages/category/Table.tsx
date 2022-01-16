@@ -6,12 +6,15 @@ import { useSnackbar } from 'notistack';
 import { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { BadgeNo, BadgeYes } from '../../components/Badge';
-import DefaultTable, { makeActionStyles, TableColumn } from '../../components/Table';
+import DefaultTable, { makeActionStyles, TableColumn, MuiDataTableRefComponent } from '../../components/Table';
 import FilterResetButton from '../../components/Table/FilterResetButton';
 import useFilter from '../../hooks/useFilter';
-import { Creators } from '../../store/filter';
+// import { Creators } from '../../store/filter';
 import categoryHttp from '../../util/http/category-http';
 import { Category, ListResponse } from '../../util/models';
+import * as yup from '../../util/vendor/yup';
+
+const isActive = { 'Sim': true, 'Não': false };
 
 const columnsDefinition: TableColumn[] = [
     {
@@ -37,7 +40,7 @@ const columnsDefinition: TableColumn[] = [
         width: "4%",
         options: {
             filterOptions: {
-                names: ['Sim', 'Não']
+                names: Object.keys(isActive)
             },
             customBodyRender(value, tableMeta, updateValue) {
                 return value ? <BadgeYes /> : <BadgeNo />;
@@ -87,12 +90,14 @@ const Table = () => {
     const [data, setData] = useState<Category[]>([]);
     const [loading, setLoading] = useState<boolean>(false);
     const { enqueueSnackbar } = useSnackbar();
+    const tableRef = useRef() as React.MutableRefObject<MuiDataTableRefComponent>;
+
     const {
         columns,
         filterManager,
         filterState,
         debouncedFilterState,
-        dispatch,
+        // dispatch,
         totalRecords,
         setTotalRecords,
     } = useFilter({
@@ -100,7 +105,44 @@ const Table = () => {
         debouncedTime: debouncedTime,
         rowsPerPage,
         rowsPerPageOptions,
+        tableRef,
+        extraFilter: {
+            createValidationsSchema: () => {
+                return yup.object().shape({
+                    is_active: yup.string()
+                        .nullable()
+                        .transform(value => {
+                            return !value || !Object.keys(isActive).includes(value) ? undefined : value;
+                        })
+                        .default(null)
+                })
+            },
+            formatSearchParams: (debouncedFilterState) => {
+                return debouncedFilterState.extraFilter
+                    ? {
+                        ...(
+                            debouncedFilterState.extraFilter.is_active &&
+                            { is_active: debouncedFilterState.extraFilter.is_active }
+                        )
+                    }
+                    : undefined
+            },
+            getStateFromURL: (queryParams) => {
+                return {
+                    is_active: queryParams.get('is_active')
+                }
+            }
+        },
     });
+
+    const indexColumnIsActive = columns.findIndex(c => c.name === 'is_active');
+    const columnIsActive = columns[indexColumnIsActive];
+    const isActiveFilterValue = filterState.extraFilter && filterState.extraFilter.is_active as never;
+    (columnIsActive.options as any).filterList = isActiveFilterValue ? [isActiveFilterValue] : []
+    // const serverSideFilterList = columns.map(column => []);
+    // if (isActiveFilterValue) {
+    //     serverSideFilterList[indexColumnIsActive] = [isActiveFilterValue];
+    // }
 
     useEffect(() => {
         subscribed.current = true
@@ -113,8 +155,8 @@ const Table = () => {
         filterManager.cleanSearchText(debouncedFilterState.search),
         debouncedFilterState.pagination.page,
         debouncedFilterState.pagination.per_page,
-        debouncedFilterState.order.sort,
-        debouncedFilterState.order.dir,
+        debouncedFilterState.order,
+        JSON.stringify(debouncedFilterState.extraFilter)
     ]);
 
     async function getData() {
@@ -127,6 +169,11 @@ const Table = () => {
                     per_page: filterState.pagination.per_page,
                     sort: filterState.order.sort,
                     dir: filterState.order.dir,
+                    ...(
+                        debouncedFilterState.extraFilter &&
+                        debouncedFilterState.extraFilter.is_active &&
+                        { is_active: isActive[debouncedFilterState.extraFilter.is_active] }
+                    )
                 }
             });
             if (subscribed.current) {
@@ -155,6 +202,7 @@ const Table = () => {
                 data={data}
                 loading={loading}
                 debouncedSearchTime={debouncedSearchTime}
+                ref={tableRef}
                 options={{
                     serverSide: true,
                     searchText: filterState.search as any,
@@ -162,10 +210,18 @@ const Table = () => {
                     rowsPerPage: filterState.pagination.per_page,
                     rowsPerPageOptions,
                     count: totalRecords,
+                    onFilterChange: (column: any, filterList, type) => {
+                        const columnLocal = !column ? 'is_active'  : column
+                        const columnIndex = columns.findIndex(c => c.name === columnLocal);
+                        filterManager.changeExtraFilter({
+                            [columnLocal]: filterList[columnIndex].length ? filterList[columnIndex][0] : null
+                        })
+                    },
                     customToolbar: () => (
                         <FilterResetButton
                             handleClick={() => {
-                                dispatch(Creators.setReset(filterManager.getStateFromURL()))
+                                // dispatch(Creators.setReset(filterManager.getStateFromURL()))
+                                filterManager.resetFilter();
                             }}
                         />
                     ),
