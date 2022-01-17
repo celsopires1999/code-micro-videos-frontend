@@ -1,4 +1,3 @@
-// @flow 
 import { IconButton, Menu as MuiMenu, MenuItem } from '@material-ui/core';
 import * as React from 'react';
 import MenuIcon from '@material-ui/icons/Menu';
@@ -10,6 +9,7 @@ const listRoutes = {
     'categories.list': 'Categorias',
     'cast_members.list': 'Membros de elenco',
     'genres.list': 'Gêneros',
+    'videos.list': 'Vídeos',
 };
 const menuRoutes = routes.filter(route => Object.keys(listRoutes).includes(route.name));
 
