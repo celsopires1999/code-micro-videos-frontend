@@ -43,7 +43,7 @@ const columnsDefinition: TableColumn[] = [
                 names: []
             },
             customBodyRender(value, tableMeta, updateValue) {
-                return value.map(value => value.name).join(', ');
+                return !value ? null : value.map(value => value.name).join(', ');
             }
         }
     },
@@ -159,7 +159,7 @@ const Table = () => {
         let isSubscribed = true;
         (async () => {
             try {
-                const { data } = await categoryHttp.list({queryParams: {all: ''}});
+                const { data } = await categoryHttp.list({ queryParams: { all: '' } });
                 if (isSubscribed) {
                     // setCategories(data.data); 
                     (columnCategories.options as any).filterOptions.names = data.data.map(category => category.name);

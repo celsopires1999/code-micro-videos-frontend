@@ -3,11 +3,12 @@ import { useSnackbar } from "notistack";
 import { useEffect, useState } from "react";
 import useForm from "react-hook-form";
 import { useParams, useHistory } from "react-router";
-import * as yup from '../../util/vendor/yup';
-import { Video } from "../../util/models";
-import SubmitActions from "../../components/SubmitActions";
-import DefaultForm from "../../components/DefaultForm";
-import videoHttp from "../../util/http/video-http";
+import * as yup from '../../../util/vendor/yup';
+import { Video } from "../../../util/models";
+import SubmitActions from "../../../components/SubmitActions";
+import DefaultForm from "../../../components/DefaultForm";
+import videoHttp from "../../../util/http/video-http";
+import RatingField from "./RatingField";
 
 const validationSchema = yup.object().shape({
     title: yup.string()
@@ -43,7 +44,6 @@ export const Form = () => {
     } = useForm({
         validationSchema,
         defaultValues: {
-            is_active: true
         }
     });
 
@@ -52,6 +52,10 @@ export const Form = () => {
     const { id }: any = useParams();
     const [video, setVideo] = useState<Video | null>(null);
     const [loading, setLoading] = useState<boolean>(false);
+
+    useEffect(() => {
+        ['rating', 'opened'].forEach(name => register({ name }));
+    }, [register]);
 
     useEffect(() => {
         if (!id) {
@@ -184,10 +188,15 @@ export const Form = () => {
                     Gêneros e Categorias
                 </Grid>
                 <Grid item xs={12} md={6}>
-                    Classificação
-                    <br/>
+                    <RatingField
+                        value={watch('rating')}
+                        setValue={(value) => setValue('rating', value, true)}
+                        error={errors.rating}
+                        disabled={loading}
+                    />
+                    <br />
                     Uploads
-                    <br/>
+                    <br />
                     <FormControlLabel
                         disabled={loading}
                         control={
