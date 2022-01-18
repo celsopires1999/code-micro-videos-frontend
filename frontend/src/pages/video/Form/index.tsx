@@ -1,4 +1,4 @@
-import { Checkbox, FormControlLabel, Grid, TextField, Typography } from "@material-ui/core";
+import { Checkbox, FormControlLabel, Grid, TextField, Typography, useMediaQuery, useTheme } from "@material-ui/core";
 import { useSnackbar } from "notistack";
 import { useEffect, useState } from "react";
 import useForm from "react-hook-form";
@@ -52,6 +52,8 @@ export const Form = () => {
     const { id }: any = useParams();
     const [video, setVideo] = useState<Video | null>(null);
     const [loading, setLoading] = useState<boolean>(false);
+    const theme = useTheme();
+    const isGreaterMd = useMediaQuery(theme.breakpoints.up('md'));
 
     useEffect(() => {
         ['rating', 'opened'].forEach(name => register({ name }));
@@ -193,6 +195,9 @@ export const Form = () => {
                         setValue={(value) => setValue('rating', value, true)}
                         error={errors.rating}
                         disabled={loading}
+                        FormControlProps={{
+                            margin: isGreaterMd ? 'none' : 'normal'
+                        }}
                     />
                     <br />
                     Uploads
