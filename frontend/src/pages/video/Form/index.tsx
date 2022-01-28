@@ -141,7 +141,7 @@ export const Form = () => {
         queryParams: {
             search: searchText, all: ""
         }
-    }).then(({data}) => data.data);
+    }).then(({ data }) => data.data);
 
     return (
         <DefaultForm
@@ -209,10 +209,10 @@ export const Form = () => {
                     </Grid>
                     Elenco
                     <br />
-                    <AsyncAutocomplete 
+                    <AsyncAutocomplete
                         fetchOptions={fetchOptions}
                         AutocompleteProps={{
-                            freeSolo: true,
+                            freeSolo: false,
                             getOptionLabel: option => option.name
                         }}
                         TextFieldProps={{

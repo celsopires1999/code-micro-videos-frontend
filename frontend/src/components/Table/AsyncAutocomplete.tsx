@@ -1,6 +1,6 @@
 import { Autocomplete, AutocompleteProps } from '@material-ui/lab'
 import { CircularProgress, TextField, TextFieldProps } from '@material-ui/core';
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useSnackbar } from 'notistack';
 
 interface AsyncAutocompleteProps {
@@ -11,12 +11,7 @@ interface AsyncAutocompleteProps {
 
 const AsyncAutocomplete: React.FC<AsyncAutocompleteProps> = (props) => {
     const { AutocompleteProps } = props;
-    // const { freeSolo, onOpen, onClose, onInputChange } = AutocompleteProps as any;
-    const freeSolo = AutocompleteProps?.freeSolo;
-    const onOpen = AutocompleteProps?.onOpen;
-    const onClose = AutocompleteProps?.onClose;
-    const onInputChange = AutocompleteProps?.onInputChange;
-
+    const { freeSolo, onOpen, onClose, onInputChange } = AutocompleteProps as any;
     const [open, setOpen] = useState(false);
     const [searchText, setSearchText] = useState("");
     const [loading, setLoading] = useState(false);
@@ -67,13 +62,19 @@ const AsyncAutocomplete: React.FC<AsyncAutocompleteProps> = (props) => {
     }
 
     useEffect(() => {
-        if (!open || searchText === "" && freeSolo) { return };
+        if (open || freeSolo) return;
+        setOptions([]);
+
+    }, [open]);
+
+    useEffect(() => {
+        if ((!open || searchText === "") && freeSolo) return;
 
         let isSubscribed = true;
         (async function () {
             setLoading(true);
             try {
-                const data  = await props.fetchOptions(searchText);
+                const data = await props.fetchOptions(searchText);
                 if (isSubscribed) {
                     setOptions(data);
                 }
