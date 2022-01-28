@@ -1,14 +1,26 @@
-import { Checkbox, FormControlLabel, Grid, TextField, Typography, useMediaQuery, useTheme } from "@material-ui/core";
+import { Card, CardContent, Checkbox, FormControlLabel, Grid, TextField, Theme, Typography, useMediaQuery, useTheme } from "@material-ui/core";
 import { useSnackbar } from "notistack";
 import { useEffect, useState } from "react";
 import useForm from "react-hook-form";
 import { useParams, useHistory } from "react-router";
 import * as yup from '../../../util/vendor/yup';
-import { Video } from "../../../util/models";
+import { Video, VideoFileFieldsMap } from "../../../util/models";
 import SubmitActions from "../../../components/SubmitActions";
 import DefaultForm from "../../../components/DefaultForm";
 import videoHttp from "../../../util/http/video-http";
 import RatingField from "./RatingField";
+import UploadField from "./UploadField";
+import { makeStyles } from "@material-ui/styles";
+import AsyncAutocomplete from "../../../components/Table/AsyncAutocomplete";
+import genreHttp from "../../../util/http/genre-http";
+
+const useStyles = makeStyles((theme: Theme) => ({
+    cardUpload: {
+        borderRadius: "4px",
+        backgroundColor: "#f5f5f5",
+        margin: theme.spacing(2, 0)
+    }
+}));
 
 const validationSchema = yup.object().shape({
     title: yup.string()
@@ -30,6 +42,8 @@ const validationSchema = yup.object().shape({
         .label('Classificação')
         .required(),
 });
+
+const fileFields = Object.keys(VideoFileFieldsMap);
 
 export const Form = () => {
     const {
@@ -55,8 +69,10 @@ export const Form = () => {
     const theme = useTheme();
     const isGreaterMd = useMediaQuery(theme.breakpoints.up('md'));
 
+    const classes = useStyles();
+
     useEffect(() => {
-        ['rating', 'opened'].forEach(name => register({ name }));
+        ['rating', 'opened', ...fileFields].forEach(name => register({ name }));
     }, [register]);
 
     useEffect(() => {
@@ -120,6 +136,12 @@ export const Form = () => {
             setLoading(false);
         }
     }
+
+    const fetchOptions = (searchText) => genreHttp.list({
+        queryParams: {
+            search: searchText, all: ""
+        }
+    }).then(({data}) => data.data);
 
     return (
         <DefaultForm
@@ -187,7 +209,16 @@ export const Form = () => {
                     </Grid>
                     Elenco
                     <br />
-                    Gêneros e Categorias
+                    <AsyncAutocomplete 
+                        fetchOptions={fetchOptions}
+                        AutocompleteProps={{
+                            freeSolo: true,
+                            getOptionLabel: option => option.name
+                        }}
+                        TextFieldProps={{
+                            label: 'Gêneros'
+                        }}
+                    />
                 </Grid>
                 <Grid item xs={12} md={6}>
                     <RatingField
@@ -200,7 +231,42 @@ export const Form = () => {
                         }}
                     />
                     <br />
-                    Uploads
+                    <Card className={classes.cardUpload}>
+                        <CardContent>
+                            <Typography color="primary" variant="h6">
+                                Imagens
+                            </Typography>
+                            <UploadField
+                                accept={'image/*'}
+                                label={'Thumb'}
+                                setValue={(value) => setValue('thumb_file', value)}
+                            />
+                            <UploadField
+                                accept={'image/*'}
+                                label={'Banner'}
+                                setValue={(value) => setValue('banner_file', value)}
+                            />
+                        </CardContent>
+                    </Card>
+                    <Card className={classes.cardUpload}>
+                        <CardContent>
+                            <Typography color="primary" variant="h6">
+                                Vídeos
+                            </Typography>
+                            <UploadField
+                                accept={'video/mp4'}
+                                label={'Trailer'}
+                                setValue={(value) => setValue('trailer_file', value)}
+                            />
+                            <UploadField
+                                accept={'video/mp4'}
+                                label={'Principal'}
+                                setValue={(value) => {
+                                    setValue('video_file', value)
+                                }}
+                            />
+                        </CardContent>
+                    </Card>
                     <br />
                     <FormControlLabel
                         disabled={loading}
