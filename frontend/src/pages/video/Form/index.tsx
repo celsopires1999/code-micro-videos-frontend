@@ -15,6 +15,8 @@ import AsyncAutocomplete from "../../../components/Table/AsyncAutocomplete";
 import genreHttp from "../../../util/http/genre-http";
 import GridSelected from "../../../components/GridSelected";
 import GridSelectedItem from "../../../components/GridSelectedItem";
+import useHttpHandled from "../../../hooks/useHttpHandled";
+import { isConstructorDeclaration } from "typescript";
 
 const useStyles = makeStyles((theme: Theme) => ({
     cardUpload: {
@@ -139,11 +141,15 @@ export const Form = () => {
         }
     }
 
-    const fetchOptions = (searchText) => genreHttp.list({
-        queryParams: {
-            search: searchText, all: ""
-        }
-    }).then(({ data }) => data.data);
+    const autocompleteHttp = useHttpHandled();
+    const fetchOptions = (searchText) => autocompleteHttp(
+        genreHttp.
+            list({
+                queryParams: {
+                    search: searchText, all: ""
+                }
+            })
+    ).then((data) => data.data).catch(error => console.error(error));
 
     return (
         <DefaultForm
@@ -214,7 +220,7 @@ export const Form = () => {
                     <AsyncAutocomplete
                         fetchOptions={fetchOptions}
                         AutocompleteProps={{
-                            freeSolo: false,
+                            freeSolo: true,
                             getOptionLabel: option => option.name
                         }}
                         TextFieldProps={{
