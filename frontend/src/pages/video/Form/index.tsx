@@ -38,6 +38,12 @@ const validationSchema = yup.object().shape({
         .label('Duração')
         .required()
         .min(1),
+    genres: yup.array()
+        .label('Gêneros')
+        .min(1),
+    categories: yup.array()
+        .label('Categorias')
+        .min(1),
     rating: yup.string()
         .label('Classificação')
         .required(),
@@ -224,15 +230,20 @@ export const Form = () => {
                     <Grid container spacing={2}>
                         <Grid item xs={12} md={6}>
                             <GenreField
-                                genres={watch('genres') as any}
+                                genres={watch('genres')}
                                 setGenres={(value) => setValue('genres', value, true)}
+                                error={errors.genres}
+                                disabled={loading}
+
                             />
                         </Grid>
                         <Grid item xs={12} md={6}>
                             <CategoryField
-                                categories={watch('categories') as any}
+                                categories={watch('categories')}
                                 setCategories={(value) => setValue('categories', value, true)}
-                                genres={watch('genres') as any}
+                                genres={watch('genres')}
+                                error={errors.categories}
+                                disabled={loading}
                             />
                         </Grid>
                         <Grid item xs={12}>

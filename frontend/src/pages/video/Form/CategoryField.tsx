@@ -1,4 +1,4 @@
-import { Typography } from "@material-ui/core";
+import { FormControl, FormControlProps, FormHelperText, Typography } from "@material-ui/core";
 import GridSelected from "../../../components/GridSelected";
 import GridSelectedItem from "../../../components/GridSelectedItem";
 import AsyncAutocomplete from "../../../components/Table/AsyncAutocomplete";
@@ -11,9 +11,12 @@ interface CategoryFieldProps {
     categories: any[]
     setCategories: (categories) => void
     genres: Genre[]
+    error: any
+    disabled?: boolean
+    FormControlProps?: FormControlProps
 };
 const CategoryField: React.FC<CategoryFieldProps> = (props) => {
-    const { categories, setCategories, genres } = props;
+    const { categories, setCategories, genres, error, disabled } = props;
     const autocompleteHttp = useHttpHandled();
     const { addItem, removeItem } = useCollectionManager(categories, setCategories);
     async function fetchOptions(searchText) {
@@ -32,24 +35,39 @@ const CategoryField: React.FC<CategoryFieldProps> = (props) => {
             <AsyncAutocomplete
                 fetchOptions={fetchOptions}
                 AutocompleteProps={{
+                    // autoSelect: true,
+                    clearOnEscape: true,
                     freeSolo: false,
                     getOptionLabel: option => option.name,
+                    getOptionSelected: (option, value) => option.id === value.id,
                     onChange: (event, value) => addItem(value),
-                    disabled: !genres.length
+                    disabled: disabled === true || !genres.length
                 }}
                 TextFieldProps={{
-                    label: 'Categorias'
+                    label: 'Categorias',
+                    error: error !== undefined
                 }}
             />
-            <GridSelected>
-                {categories.map((category, key) => (
-                    <GridSelectedItem key={key} onClick={() => console.log('clicou')} xs={12}>
-                        <Typography noWrap={true}>
-                            {category.name}
-                        </Typography>
-                    </GridSelectedItem>
-                ))}
-            </GridSelected>
+            <FormControl
+                margin={'normal'}
+                fullWidth
+                error={error !== undefined}
+                disabled={disabled === true}
+                {...props.FormControlProps}
+            >
+                <GridSelected>
+                    {categories.map((category, key) => (
+                        <GridSelectedItem key={key} onClick={() => console.log('clicou')} xs={12}>
+                            <Typography noWrap={true}>
+                                {category.name}
+                            </Typography>
+                        </GridSelectedItem>
+                    ))}
+                </GridSelected>
+                {
+                    error && <FormHelperText >{error.message}</FormHelperText>
+                }
+            </FormControl>
         </>
     );
 };
