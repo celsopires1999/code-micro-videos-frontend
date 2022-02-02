@@ -1,7 +1,7 @@
 import { Box, Button, ButtonProps, makeStyles, MenuItem, TextField, Theme } from "@material-ui/core";
 import * as React from "react";
 import { useEffect, useState } from "react";
-import useForm from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { useHistory, useParams } from "react-router";
 import * as yup from 'yup';
 import categoryHttp from "../../util/http/category-http";

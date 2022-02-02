@@ -1,7 +1,7 @@
-import { Card, CardContent, Checkbox, FormControlLabel, Grid, TextField, Theme, Typography, useMediaQuery, useTheme } from "@material-ui/core";
+import { Card, CardContent, Checkbox, FormControlLabel, FormHelperText, Grid, TextField, Theme, Typography, useMediaQuery, useTheme } from "@material-ui/core";
 import { useSnackbar } from "notistack";
 import { useEffect, useState } from "react";
-import useForm from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { useParams, useHistory } from "react-router";
 import * as yup from '../../../util/vendor/yup';
 import { Video, VideoFileFieldsMap } from "../../../util/models";
@@ -11,12 +11,8 @@ import videoHttp from "../../../util/http/video-http";
 import RatingField from "./RatingField";
 import UploadField from "./UploadField";
 import { makeStyles } from "@material-ui/styles";
-import AsyncAutocomplete from "../../../components/Table/AsyncAutocomplete";
-import genreHttp from "../../../util/http/genre-http";
-import GridSelected from "../../../components/GridSelected";
-import GridSelectedItem from "../../../components/GridSelectedItem";
-import useHttpHandled from "../../../hooks/useHttpHandled";
-import { isConstructorDeclaration } from "typescript";
+import GenreField from "./GenreField";
+import CategoryField from "./CategoryField";
 
 const useStyles = makeStyles((theme: Theme) => ({
     cardUpload: {
@@ -59,9 +55,21 @@ export const Form = () => {
         reset,
         watch,
         triggerValidation
-    } = useForm({
+    } = useForm<{
+        title,
+        description,
+        year_launched,
+        duration,
+        rating,
+        cast_members,
+        genres,
+        categories,
+        opened
+    }>({
         validationSchema,
         defaultValues: {
+            genres: [],
+            categories: []
         }
     });
 
@@ -76,7 +84,13 @@ export const Form = () => {
     const classes = useStyles();
 
     useEffect(() => {
-        ['rating', 'opened', ...fileFields].forEach(name => register({ name }));
+        [
+            'rating',
+            'opened',
+            'genres',
+            'categories',
+            ...fileFields
+        ].forEach(name => register({ name }));
     }, [register]);
 
     useEffect(() => {
@@ -140,16 +154,6 @@ export const Form = () => {
             setLoading(false);
         }
     }
-
-    const autocompleteHttp = useHttpHandled();
-    const fetchOptions = (searchText) => autocompleteHttp(
-        genreHttp.
-            list({
-                queryParams: {
-                    search: searchText, all: ""
-                }
-            })
-    ).then((data) => data.data).catch(error => console.error(error));
 
     return (
         <DefaultForm
@@ -217,27 +221,34 @@ export const Form = () => {
                     </Grid>
                     Elenco
                     <br />
-                    <AsyncAutocomplete
-                        fetchOptions={fetchOptions}
-                        AutocompleteProps={{
-                            freeSolo: true,
-                            getOptionLabel: option => option.name
-                        }}
-                        TextFieldProps={{
-                            label: 'Gêneros'
-                        }}
-                    />
-                    <GridSelected>
-                        <GridSelectedItem onClick={() => console.log('clicou')} xs={6}>
-                            <Typography noWrap={true}>
-                                Gênero 1
-                            </Typography>
-                        </GridSelectedItem>
-                    </GridSelected>
+                    <Grid container spacing={2}>
+                        <Grid item xs={12} md={6}>
+                            <GenreField
+                                genres={watch('genres') as any}
+                                setGenres={(value) => setValue('genres', value, true)}
+                            />
+                        </Grid>
+                        <Grid item xs={12} md={6}>
+                            <CategoryField
+                                categories={watch('categories') as any}
+                                setCategories={(value) => setValue('categories', value, true)}
+                                genres={watch('genres') as any}
+                            />
+                        </Grid>
+                        <Grid item xs={12}>
+                            <FormHelperText>
+                                Escolha os gêneros do vídeo
+                            </FormHelperText>
+                            <FormHelperText>
+                                Escolha pelo menos uma categoria de cada gênero
+                            </FormHelperText>
+                        </Grid>
+                    </Grid>
+
                 </Grid>
                 <Grid item xs={12} md={6}>
                     <RatingField
-                        value={watch('rating')}
+                        value={watch('rating') as any}
                         setValue={(value) => setValue('rating', value, true)}
                         error={errors.rating}
                         disabled={loading}

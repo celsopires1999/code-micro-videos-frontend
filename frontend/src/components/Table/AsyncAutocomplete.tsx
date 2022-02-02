@@ -1,4 +1,4 @@
-import { Autocomplete, AutocompleteProps } from '@material-ui/lab'
+import { Autocomplete, AutocompleteProps,  UseAutocompleteSingleProps} from '@material-ui/lab'
 import { CircularProgress, TextField, TextFieldProps } from '@material-ui/core';
 import React, { useEffect, useState } from 'react';
 import { useSnackbar } from 'notistack';
@@ -6,12 +6,12 @@ import { useSnackbar } from 'notistack';
 interface AsyncAutocompleteProps {
     fetchOptions: (searchText: string) => Promise<any>;
     TextFieldProps?: TextFieldProps;
-    AutocompleteProps?: Omit<AutocompleteProps<any>, 'renderInput'>;
+    AutocompleteProps?: Omit<AutocompleteProps<any>, 'renderInput'> & UseAutocompleteSingleProps<any>;
 };
 
 const AsyncAutocomplete: React.FC<AsyncAutocompleteProps> = (props) => {
     const { AutocompleteProps } = props;
-    const { freeSolo, onOpen, onClose, onInputChange } = AutocompleteProps as any;
+    const { freeSolo = false, onOpen, onClose, onInputChange } = AutocompleteProps as any;
     const [open, setOpen] = useState(false);
     const [searchText, setSearchText] = useState("");
     const [loading, setLoading] = useState(false);
