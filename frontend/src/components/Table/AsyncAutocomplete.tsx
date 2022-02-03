@@ -1,19 +1,22 @@
-import { Autocomplete, AutocompleteProps,  UseAutocompleteSingleProps} from '@material-ui/lab'
+import { Autocomplete, AutocompleteProps, UseAutocompleteSingleProps } from '@material-ui/lab'
 import { CircularProgress, TextField, TextFieldProps } from '@material-ui/core';
 import React, { useEffect, useState } from 'react';
 import { useSnackbar } from 'notistack';
+import { useDebounce } from 'use-debounce';
 
 interface AsyncAutocompleteProps {
     fetchOptions: (searchText: string) => Promise<any>;
+    debouncedTime?: number
     TextFieldProps?: TextFieldProps;
     AutocompleteProps?: Omit<AutocompleteProps<any>, 'renderInput'> & UseAutocompleteSingleProps<any>;
 };
 
 const AsyncAutocomplete: React.FC<AsyncAutocompleteProps> = (props) => {
-    const { AutocompleteProps } = props;
+    const { AutocompleteProps, debouncedTime = 300 } = props;
     const { freeSolo = false, onOpen, onClose, onInputChange } = AutocompleteProps as any;
     const [open, setOpen] = useState(false);
     const [searchText, setSearchText] = useState("");
+    const [debouncedSearchText] = useDebounce(searchText, debouncedTime);
     const [loading, setLoading] = useState(false);
     const [options, setOptions] = useState([]);
     const { enqueueSnackbar } = useSnackbar();
@@ -68,13 +71,13 @@ const AsyncAutocomplete: React.FC<AsyncAutocompleteProps> = (props) => {
     }, [open]);
 
     useEffect(() => {
-        if ((!open || searchText === "") && freeSolo) return;
+        if ((!open || debouncedSearchText === "") && freeSolo) return;
 
         let isSubscribed = true;
         (async function () {
             setLoading(true);
             try {
-                const data = await props.fetchOptions(searchText);
+                const data = await props.fetchOptions(debouncedSearchText);
                 if (isSubscribed) {
                     setOptions(data);
                 }
@@ -87,7 +90,7 @@ const AsyncAutocomplete: React.FC<AsyncAutocompleteProps> = (props) => {
             isSubscribed = false;
         }
 
-    }, [enqueueSnackbar, freeSolo ? searchText : open]);
+    }, [enqueueSnackbar, freeSolo ? debouncedSearchText : open]);
 
     return (
         <Autocomplete {...autocompleteProps} />
