@@ -2,7 +2,7 @@
 
 namespace App\ModelFilters;
 
-// use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Builder;
 
 class CategoryFilter extends DefaultModelFilter
 {
@@ -17,5 +17,14 @@ class CategoryFilter extends DefaultModelFilter
     {
         $is_active_ = filter_var($is_active, FILTER_VALIDATE_BOOL);
         $this->where('is_active', $is_active_);
+    }
+
+    public function genres($genres)
+    {
+        $ids = explode(",", $genres);
+        $this->whereHas('genres', function (Builder $query) use ($ids) {
+            $query
+                ->whereIn('id', $ids);
+        });
     }
 }
