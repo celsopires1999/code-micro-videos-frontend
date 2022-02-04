@@ -1,11 +1,20 @@
-import { FormControl, FormControlProps, FormHelperText, Typography } from "@material-ui/core";
+import { FormControl, FormControlProps, FormHelperText, makeStyles, Theme, Typography } from "@material-ui/core";
+import { grey } from "@material-ui/core/colors";
 import GridSelected from "../../../components/GridSelected";
 import GridSelectedItem from "../../../components/GridSelectedItem";
 import AsyncAutocomplete from "../../../components/Table/AsyncAutocomplete";
 import useCollectionManager from "../../../hooks/useCollectionManager";
 import useHttpHandled from "../../../hooks/useHttpHandled";
 import categoryHttp from "../../../util/http/category-http";
+import { getGenresFromCategory } from "../../../util/model-filter";
 import { Genre } from "../../../util/models";
+
+const useStyles = makeStyles((theme: Theme) => ({
+    genresSubtitle: {
+        color: grey["800"],
+        fontSize: '0.8rem'
+    },
+}));
 
 interface CategoryFieldProps {
     categories: any[]
@@ -17,6 +26,7 @@ interface CategoryFieldProps {
 };
 const CategoryField: React.FC<CategoryFieldProps> = (props) => {
     const { categories, setCategories, genres, error, disabled } = props;
+    const classes = useStyles();
     const autocompleteHttp = useHttpHandled();
     const { addItem, removeItem } = useCollectionManager(categories, setCategories);
     async function fetchOptions(searchText) {
@@ -56,13 +66,26 @@ const CategoryField: React.FC<CategoryFieldProps> = (props) => {
                 {...props.FormControlProps}
             >
                 <GridSelected>
-                    {categories.map((category, key) => (
-                        <GridSelectedItem key={key} onClick={() => console.log('clicou')} xs={12}>
-                            <Typography noWrap={true}>
-                                {category.name}
-                            </Typography>
-                        </GridSelectedItem>
-                    ))}
+                    {
+                        categories.map((category, key) => {
+                            const genresFromCategory = getGenresFromCategory(genres, category)
+                                .map(genre => genre.name)
+                                .join(',');
+                            return (
+                                <GridSelectedItem
+                                    key={key}
+                                    onDelete={() => removeItem(category)} xs={12}
+                                >
+                                    <Typography noWrap={true}>
+                                        {category.name}
+                                    </Typography>
+                                    <Typography noWrap={true} className={classes.genresSubtitle}>
+                                        Gêneros: {genresFromCategory}
+                                    </Typography>
+                                </GridSelectedItem>
+                            )
+                        })
+                    }
                 </GridSelected>
                 {
                     error && <FormHelperText >{error.message}</FormHelperText>

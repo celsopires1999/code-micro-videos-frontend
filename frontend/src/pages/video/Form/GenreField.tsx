@@ -5,18 +5,29 @@ import AsyncAutocomplete from "../../../components/Table/AsyncAutocomplete";
 import useCollectionManager from "../../../hooks/useCollectionManager";
 import useHttpHandled from "../../../hooks/useHttpHandled";
 import genreHttp from "../../../util/http/genre-http";
+import { getGenresFromCategory } from "../../../util/model-filter";
 
 interface GenreFieldProps {
     genres: any[]
     setGenres: (genres) => void
+    categories: any[]
+    setCategories: (categories) => void
     error: any
     disabled?: boolean
     FormControlProps?: FormControlProps
 };
 const GenreField: React.FC<GenreFieldProps> = (props) => {
-    const { genres, setGenres, error, disabled } = props;
+    const {
+        genres,
+        setGenres,
+        categories,
+        setCategories,
+        error,
+        disabled
+    } = props;
     const autocompleteHttp = useHttpHandled();
     const { addItem, removeItem } = useCollectionManager(genres, setGenres);
+    const { removeItem: removeCategory } = useCollectionManager(categories, setCategories);
     async function fetchOptions(searchText) {
         return autocompleteHttp(
             genreHttp.
@@ -63,7 +74,19 @@ const GenreField: React.FC<GenreFieldProps> = (props) => {
             >
                 <GridSelected>
                     {genres.map((genre, key) => (
-                        <GridSelectedItem key={key} onClick={() => console.log('clicou')} xs={12}>
+                        <GridSelectedItem
+                            key={key}
+                            onDelete={() => {
+                                const categoriesWithOneGenre = categories
+                                    .filter(category => {
+                                        const genresFromCategory = getGenresFromCategory(genres, category);
+                                        return genresFromCategory.length === 1 && genres[0].id === genre.id
+                                    })
+                                categoriesWithOneGenre.forEach(cat => removeCategory(cat));
+                                removeItem(genre)
+                            }}
+                            xs={12}
+                        >
                             <Typography noWrap={true}>
                                 {genre.name}
                             </Typography>
