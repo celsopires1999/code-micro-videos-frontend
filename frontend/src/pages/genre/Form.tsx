@@ -77,7 +77,7 @@ export const Form = () => {
                 }
                 if (id && isSubscribed) {
                     setGenre(genreResponse.data.data);
-                    setGenre(genreResponse.data.data)
+                    // setGenre(genreResponse.data.data)
                     const categories_id = genreResponse.data.data.categories.map(category => category.id);
                     reset({
                         ...genreResponse.data.data,

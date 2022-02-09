@@ -9,12 +9,11 @@ import { BadgeNo, BadgeYes } from '../../components/Badge';
 import DefaultTable, { makeActionStyles, TableColumn, MuiDataTableRefComponent } from '../../components/Table';
 import FilterResetButton from '../../components/Table/FilterResetButton';
 import useFilter from '../../hooks/useFilter';
-// import { Creators } from '../../store/filter';
 import categoryHttp from '../../util/http/category-http';
-import { Category, ListResponse } from '../../util/models';
+import genreHttp from '../../util/http/genre-http';
+import videoHttp from '../../util/http/video-http';
+import { Video, ListResponse } from '../../util/models';
 import * as yup from '../../util/vendor/yup';
-
-const isActive = { 'Sim': true, 'Não': false };
 
 const columnsDefinition: TableColumn[] = [
     {
@@ -27,23 +26,39 @@ const columnsDefinition: TableColumn[] = [
         }
     },
     {
-        name: "name",
-        label: "Nome",
-        width: "43%",
+        name: "title",
+        label: "Título",
+        width: "20%",
         options: {
             filter: false
         }
     },
     {
-        name: "is_active",
-        label: "Ativo?",
-        width: "4%",
+        name: "genres",
+        label: "Gêneros",
+        width: "15%",
         options: {
+            filterType: 'multiselect',
             filterOptions: {
-                names: Object.keys(isActive)
+                names: []
             },
             customBodyRender(value, tableMeta, updateValue) {
-                return value ? <BadgeYes /> : <BadgeNo />;
+                return !value ? null : value.map(value => value.name).join(', ');
+            }
+        }
+    },
+
+    {
+        name: "categories",
+        label: "Categorias",
+        width: "12%",
+        options: {
+            filterType: 'multiselect',
+            filterOptions: {
+                names: []
+            },
+            customBodyRender(value, tableMeta, updateValue) {
+                return !value ? null : value.map(value => value.name).join(', ');
             }
         }
     },
@@ -70,7 +85,7 @@ const columnsDefinition: TableColumn[] = [
                     <IconButton
                         color={'secondary'}
                         component={Link}
-                        to={`/categories/${tableMeta.rowData[0]}/edit`}
+                        to={`/videos/${tableMeta.rowData[0]}/edit`}
                     >
                         <EditIcon />
                     </IconButton>
@@ -87,7 +102,7 @@ const rowsPerPageOptions = [15, 25, 50];
 
 const Table = () => {
     const subscribed = useRef(true);
-    const [data, setData] = useState<Category[]>([]);
+    const [data, setData] = useState<Video[]>([]);
     const [loading, setLoading] = useState<boolean>(false);
     const { enqueueSnackbar } = useSnackbar();
     const tableRef = useRef() as React.MutableRefObject<MuiDataTableRefComponent>;
@@ -97,7 +112,6 @@ const Table = () => {
         filterManager,
         filterState,
         debouncedFilterState,
-        // dispatch,
         totalRecords,
         setTotalRecords,
     } = useFilter({
@@ -109,40 +123,99 @@ const Table = () => {
         extraFilter: {
             createValidationsSchema: () => {
                 return yup.object().shape({
-                    is_active: yup.string()
+                    categories: yup.mixed()
                         .nullable()
                         .transform(value => {
-                            return !value || !Object.keys(isActive).includes(value) ? undefined : value;
+                            return !value || value === '' ? undefined : value.split(',')
                         })
-                        .default(null)
+                        .default(null),
+                    genres: yup.mixed()
+                        .nullable()
+                        .transform(value => {
+                            return !value || value === '' ? undefined : value.split(',')
+
+                        })
+                        .default(null),
                 })
             },
             formatSearchParams: (debouncedFilterState) => {
                 return debouncedFilterState.extraFilter
                     ? {
                         ...(
-                            debouncedFilterState.extraFilter.is_active &&
-                            { is_active: debouncedFilterState.extraFilter.is_active }
+                            debouncedFilterState.extraFilter.categories &&
+                            { categories: debouncedFilterState.extraFilter.categories.join(',') }
+                        ),
+                        ...(
+                            debouncedFilterState.extraFilter.genres &&
+                            { genres: debouncedFilterState.extraFilter.genres.join(',') }
                         )
                     }
                     : undefined
             },
             getStateFromURL: (queryParams) => {
                 return {
-                    is_active: queryParams.get('is_active')
+                    categories: queryParams.get('categories'),
+                    genres: queryParams.get('genres')
                 }
             }
         },
     });
 
-    const indexColumnIsActive = columns.findIndex(c => c.name === 'is_active');
-    const columnIsActive = columns[indexColumnIsActive];
-    const isActiveFilterValue = filterState.extraFilter && filterState.extraFilter.is_active as never;
-    (columnIsActive.options as any).filterList = isActiveFilterValue ? [isActiveFilterValue] : []
-    // const serverSideFilterList = columns.map(column => []);
-    // if (isActiveFilterValue) {
-    //     serverSideFilterList[indexColumnIsActive] = [isActiveFilterValue];
-    // }
+    const indexColumnCategories = columns.findIndex(c => c.name === 'categories');
+    const columnCategories = columns[indexColumnCategories];
+    const categoriesFilterValue = filterState.extraFilter && filterState.extraFilter.categories as never;
+    (columnCategories.options as any).filterList = categoriesFilterValue ? categoriesFilterValue : [];
+
+    const indexColumnGenres = columns.findIndex(c => c.name === 'genres');
+    const columnGenres = columns[indexColumnGenres];
+    const genresFilterValue = filterState.extraFilter && filterState.extraFilter.genres as never;
+    (columnGenres.options as any).filterList = genresFilterValue ? genresFilterValue : [];
+
+    useEffect(() => {
+        let isSubscribed = true;
+        (async () => {
+            try {
+                const { data } = await categoryHttp.list({ queryParams: { all: '' } });
+                if (isSubscribed) {
+                    (columnCategories.options as any).filterOptions.names = data.data.map(category => category.name);
+                }
+            } catch (error) {
+                console.error(error);
+                enqueueSnackbar(
+                    'Não foi possível carregar as informações',
+                    { variant: 'error', }
+                )
+            }
+        })();
+
+        return () => {
+            isSubscribed = false;
+        }
+
+    }, []);
+
+    useEffect(() => {
+        let isSubscribed = true;
+        (async () => {
+            try {
+                const { data } = await genreHttp.list({ queryParams: { all: '' } });
+                if (isSubscribed) {
+                    (columnGenres.options as any).filterOptions.names = data.data.map(genre => genre.name);
+                }
+            } catch (error) {
+                console.error(error);
+                enqueueSnackbar(
+                    'Não foi possível carregar as informações',
+                    { variant: 'error', }
+                )
+            }
+        })();
+
+        return () => {
+            isSubscribed = false;
+        }
+
+    }, []);
 
     useEffect(() => {
         subscribed.current = true
@@ -162,7 +235,7 @@ const Table = () => {
     async function getData() {
         setLoading(true);
         try {
-            const { data } = await categoryHttp.list<ListResponse<Category>>({
+            const { data } = await videoHttp.list<ListResponse<Video>>({
                 queryParams: {
                     search: filterManager.cleanSearchText(filterState.search),
                     page: filterState.pagination.page,
@@ -171,9 +244,14 @@ const Table = () => {
                     dir: filterState.order.dir,
                     ...(
                         debouncedFilterState.extraFilter &&
-                        debouncedFilterState.extraFilter.is_active &&
-                        { is_active: isActive[debouncedFilterState.extraFilter.is_active] }
-                    )
+                        debouncedFilterState.extraFilter.categories &&
+                        { categories: debouncedFilterState.extraFilter.categories.join(',') }
+                    ),
+                    ...(
+                        debouncedFilterState.extraFilter &&
+                        debouncedFilterState.extraFilter.genres &&
+                        { genres: debouncedFilterState.extraFilter.genres.join(',') }
+                    ),
                 }
             });
             if (subscribed.current) {
@@ -182,7 +260,7 @@ const Table = () => {
             }
         } catch (error) {
             console.error(error);
-            if (categoryHttp.isCancelledRequest(error)) {
+            if (videoHttp.isCancelledRequest(error)) {
                 return;
             }
             enqueueSnackbar(
@@ -211,16 +289,15 @@ const Table = () => {
                     rowsPerPageOptions,
                     count: totalRecords,
                     onFilterChange: (column: any, filterList, type) => {
-                        const columnLocal = !column ? 'is_active'  : column
+                        const columnLocal = !column ? 'categories' : column //aquiaqui
                         const columnIndex = columns.findIndex(c => c.name === columnLocal);
                         filterManager.changeExtraFilter({
-                            [columnLocal]: filterList[columnIndex].length ? filterList[columnIndex][0] : null
+                            [columnLocal]: filterList[columnIndex].length ? filterList[columnIndex] : null
                         })
                     },
                     customToolbar: () => (
                         <FilterResetButton
                             handleClick={() => {
-                                // dispatch(Creators.setReset(filterManager.getStateFromURL()))
                                 filterManager.resetFilter();
                             }}
                         />
