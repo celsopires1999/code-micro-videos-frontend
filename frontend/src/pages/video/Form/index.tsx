@@ -174,7 +174,8 @@ export const Form = () => {
     }, [id, resetForm, enqueueSnackbar]);
 
     async function onSubmit(formData, event) {
-        const sendData = omit(formData, 'cast_members', 'genres', 'categories', ...fileFields);
+        // const sendData = omit(formData, 'cast_members', 'genres', 'categories', ...fileFields);
+        const sendData = omit(formData, 'cast_members', 'genres', 'categories');
         sendData['cast_members_id'] = formData.cast_members.map(castMember => castMember.id);
         sendData['genres_id'] = formData.genres.map(genre => genre.id);
         sendData['categories_id'] = formData.categories.map(category => category.id);
@@ -182,13 +183,14 @@ export const Form = () => {
         try {
             const http = !video
                 ? videoHttp.create(sendData)
-                : videoHttp.update(video.id, sendData)
+                // : videoHttp.update(video.id, sendData)
+                : videoHttp.update(video.id, { ...sendData, _method: 'PUT' }, { http: { usePost: true } });
             const { data } = await http;
             enqueueSnackbar(
                 'Vídeo salvo com sucesso',
                 { variant: 'success' }
             )
-            // id && resetForm(video);
+            id && resetForm(video);
             setTimeout(() => {
                 event
                     ? (

@@ -81,7 +81,7 @@ const GenreField = React.forwardRef<GenreFieldComponent, GenreFieldProps>((props
                                 const categoriesWithOneGenre = categories
                                     .filter(category => {
                                         const genresFromCategory = getGenresFromCategory(genres, category);
-                                        return genresFromCategory.length === 1 && genres[0].id === genre.id
+                                        return genresFromCategory.length === 1 && genresFromCategory[0].id === genre.id
                                     })
                                 categoriesWithOneGenre.forEach(cat => removeCategory(cat));
                                 removeItem(genre)
