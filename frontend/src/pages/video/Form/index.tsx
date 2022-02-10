@@ -16,6 +16,7 @@ import CategoryField, { CategoryFieldComponent } from "./CategoryField";
 import CastMemberField, { CastMemberFieldComponent } from "./CastMemberField";
 import { omit, zipObject } from "lodash";
 import { InputFileComponent } from "../../../components/InputFile";
+import useSnackbarFormError from "../../../hooks/useSnackbarFormError";
 
 const useStyles = makeStyles((theme: Theme) => ({
     cardUpload: {
@@ -83,7 +84,8 @@ export const Form = () => {
         errors,
         reset,
         watch,
-        triggerValidation
+        triggerValidation,
+        formState
     } = useForm<{
         title,
         description,
@@ -104,7 +106,7 @@ export const Form = () => {
             opened: false,
         }
     });
-
+    useSnackbarFormError(formState.submitCount, errors);
     const { enqueueSnackbar } = useSnackbar();
     const history = useHistory();
     const { id }: any = useParams();
