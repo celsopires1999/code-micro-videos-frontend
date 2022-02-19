@@ -105,7 +105,7 @@ const rowsPerPageOptions = [15, 25, 50];
 const Table = () => {
     const subscribed = useRef(true);
     const [data, setData] = useState<Video[]>([]);
-    const [loading, setLoading] = useState<boolean>(false);
+    const loading = useContext(LoadingContext);
     const { enqueueSnackbar } = useSnackbar();
     const { openDeleteDialog, setOpenDeleteDialog, rowsToDelete, setRowsToDelete } = useDeleteCollection();
     const tableRef = useRef() as React.MutableRefObject<MuiDataTableRefComponent>;
@@ -236,7 +236,6 @@ const Table = () => {
     ]);
 
     async function getData() {
-        setLoading(true);
         try {
             const { data } = await videoHttp.list<ListResponse<Video>>({
                 queryParams: {
@@ -271,9 +270,7 @@ const Table = () => {
                 `Não foi possível encontrar as informações`,
                 { variant: 'error' }
             );
-        } finally {
-            setLoading(false);
-        }
+        } 
     }
     function deleteRows(confirmed: boolean) {
         if (!confirmed) {
@@ -302,10 +299,8 @@ const Table = () => {
                 }
             });
     }
-    const testLoading = useContext(LoadingContext);
     return (
         <MuiThemeProvider theme={makeActionStyles(columnsDefinition.length - 1)}>
-            {testLoading ? "true" : "false"}
             <DeleteDialog open={openDeleteDialog} handleClose={deleteRows} />
             <DefaultTable
                 title=""

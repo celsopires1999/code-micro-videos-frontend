@@ -1,6 +1,6 @@
 import { Checkbox, FormControlLabel, TextField } from "@material-ui/core";
 import { useSnackbar } from "notistack";
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useParams, useHistory } from "react-router";
 import categoryHttp from "../../util/http/category-http";
@@ -8,6 +8,7 @@ import * as yup from '../../util/vendor/yup';
 import { Category } from "../../util/models";
 import SubmitActions from "../../components/SubmitActions";
 import DefaultForm from "../../components/DefaultForm";
+import LoadingContext from "../../components/loading/LoadingContext";
 
 const validationSchema = yup.object().shape({
     name: yup.string()
@@ -37,7 +38,7 @@ export const Form = () => {
     const history = useHistory();
     const { id }: any = useParams();
     const [category, setCategory] = useState<Category | null>(null);
-    const [loading, setLoading] = useState<boolean>(false);
+    const loading = useContext(LoadingContext);
 
     useEffect(() => {
         register({ name: 'is_active' })
@@ -49,7 +50,6 @@ export const Form = () => {
         if (!id) {
             return
         }
-        setLoading(true);
         (async function () {
             try {
                 const { data } = await categoryHttp.get(id);
@@ -63,8 +63,6 @@ export const Form = () => {
                     `Não foi possível encontrar a categoria: ${id}`,
                     { variant: 'error' }
                 );
-            } finally {
-                setLoading(false);
             }
         })();
 
@@ -75,7 +73,6 @@ export const Form = () => {
     }, [id, reset, enqueueSnackbar]);
 
     async function onSubmit(formData, event) {
-        setLoading(true);
         try {
             const http = !category
                 ? categoryHttp.create(formData)
@@ -100,8 +97,6 @@ export const Form = () => {
                 'Não foi possível gravar a categoria',
                 { variant: 'error' }
             );
-        } finally {
-            setLoading(false);
         }
     }
 

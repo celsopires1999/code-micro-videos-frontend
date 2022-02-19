@@ -3,9 +3,10 @@ import EditIcon from '@material-ui/icons/Edit';
 import format from 'date-fns/format';
 import parseISO from 'date-fns/parseISO';
 import { useSnackbar } from 'notistack';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useContext } from 'react';
 import { Link } from 'react-router-dom';
 import { BadgeNo, BadgeYes } from '../../components/Badge';
+import LoadingContext from '../../components/loading/LoadingContext';
 import DefaultTable, { makeActionStyles, TableColumn, MuiDataTableRefComponent } from '../../components/Table';
 import FilterResetButton from '../../components/Table/FilterResetButton';
 import useFilter from '../../hooks/useFilter';
@@ -88,7 +89,7 @@ const rowsPerPageOptions = [15, 25, 50];
 const Table = () => {
     const subscribed = useRef(true);
     const [data, setData] = useState<Category[]>([]);
-    const [loading, setLoading] = useState<boolean>(false);
+    const loading = useContext(LoadingContext);
     const { enqueueSnackbar } = useSnackbar();
     const tableRef = useRef() as React.MutableRefObject<MuiDataTableRefComponent>;
 
@@ -160,7 +161,6 @@ const Table = () => {
     ]);
 
     async function getData() {
-        setLoading(true);
         try {
             const { data } = await categoryHttp.list<ListResponse<Category>>({
                 queryParams: {
@@ -189,8 +189,6 @@ const Table = () => {
                 `Não foi possível encontrar as informações`,
                 { variant: 'error' }
             );
-        } finally {
-            setLoading(false);
         }
     }
 

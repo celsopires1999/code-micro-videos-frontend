@@ -1,6 +1,6 @@
 import { Card, CardContent, Checkbox, FormControlLabel, FormHelperText, Grid, TextField, Theme, Typography, useMediaQuery, useTheme } from "@material-ui/core";
 import { useSnackbar } from "notistack";
-import { createRef, MutableRefObject, useCallback, useEffect, useRef, useState } from "react";
+import { createRef, MutableRefObject, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useParams, useHistory } from "react-router";
 import * as yup from '../../../util/vendor/yup';
@@ -17,6 +17,7 @@ import CastMemberField, { CastMemberFieldComponent } from "./CastMemberField";
 import { omit, zipObject } from "lodash";
 import { InputFileComponent } from "../../../components/InputFile";
 import useSnackbarFormError from "../../../hooks/useSnackbarFormError";
+import LoadingContext from "../../../components/loading/LoadingContext";
 
 const useStyles = makeStyles((theme: Theme) => ({
     cardUpload: {
@@ -111,7 +112,7 @@ export const Form = () => {
     const history = useHistory();
     const { id }: any = useParams();
     const [video, setVideo] = useState<Video | null>(null);
-    const [loading, setLoading] = useState<boolean>(false);
+    const loading = useContext(LoadingContext);
     const theme = useTheme();
     const isGreaterMd = useMediaQuery(theme.breakpoints.up('md'));
     const castMemberRef = useRef() as MutableRefObject<CastMemberFieldComponent>;
@@ -150,7 +151,6 @@ export const Form = () => {
         let isSubscribed = true;
 
         (async () => {
-            setLoading(true);
             try {
                 const { data } = await videoHttp.get(id);
                 if (isSubscribed) {
@@ -164,8 +164,6 @@ export const Form = () => {
                     `Não foi possível encontrar o vídeo: ${id}`,
                     { variant: 'error' }
                 );
-            } finally {
-                setLoading(false);
             }
         })();
 
@@ -181,7 +179,6 @@ export const Form = () => {
         sendData['cast_members_id'] = formData.cast_members.map(castMember => castMember.id);
         sendData['genres_id'] = formData.genres.map(genre => genre.id);
         sendData['categories_id'] = formData.categories.map(category => category.id);
-        setLoading(true);
         try {
             const http = !video
                 ? videoHttp.create(sendData)
@@ -208,8 +205,6 @@ export const Form = () => {
                 'Não foi possível gravar o vídeo',
                 { variant: 'error' }
             );
-        } finally {
-            setLoading(false);
         }
     }
     return (

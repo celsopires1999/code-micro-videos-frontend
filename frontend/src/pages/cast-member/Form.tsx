@@ -9,6 +9,7 @@ import * as yup from 'yup';
 import { useParams, useHistory } from "react-router";
 import { CastMember } from "../../util/models";
 import DefaultForm from "../../components/DefaultForm";
+import LoadingContext from "../../components/loading/LoadingContext";
 
 const useStyles = makeStyles((theme: Theme) => {
     return {
@@ -42,9 +43,9 @@ export const Form = () => {
     });
 
     const { enqueueSnackbar } = useSnackbar();
-    const [loading, setLoading] = useState<boolean>(false);
     const { id }: any = useParams();
     const [castMember, setCastMember] = useState<CastMember | null>(null);
+    const loading = React.useContext(LoadingContext);
     const classes = useStyles();
     const history = useHistory();
 
@@ -64,7 +65,6 @@ export const Form = () => {
         if (!id) {
             return
         }
-        setLoading(true);
         (async () => {
             try {
                 const { data } = await castMemberHttp.get(id);
@@ -78,8 +78,6 @@ export const Form = () => {
                     `Erro ao obter membro de elenco para edição: ${id}`,
                     { variant: 'error' }
                 );
-            } finally {
-                setLoading(false)
             }
         })();
 
@@ -90,7 +88,6 @@ export const Form = () => {
     }, [id, reset, enqueueSnackbar]);
 
     async function onSubmit(formData, event) {
-        setLoading(true);
         try {
             const http = !castMember
                 ? castMemberHttp.create(formData)
@@ -114,8 +111,6 @@ export const Form = () => {
                 `Não foi possível gravar o membro de elenco`,
                 { variant: 'error' }
             );
-        } finally {
-            setLoading(false);
         }
     }
 
