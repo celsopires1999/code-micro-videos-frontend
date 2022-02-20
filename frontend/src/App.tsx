@@ -7,7 +7,6 @@ import Breadcrumbs from './components/Breadcrumbs';
 import theme from './theme';
 import { SnackbarProvider } from './components/SnackbarProvider';
 import Spinner from './components/Spinner';
-import LoadingContext from './components/loading/LoadingContext';
 import LoadingProvider from './components/loading/LoadingProvider';
 
 const App: React.FC = () => {

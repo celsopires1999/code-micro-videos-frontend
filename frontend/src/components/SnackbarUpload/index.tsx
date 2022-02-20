@@ -1,14 +1,18 @@
 import { Card, CardActions, Collapse, IconButton, List, Typography } from "@material-ui/core";
 import ExpandMoreIcon from "@material-ui/icons/ExpandMore";
 import CloseIcon from "@material-ui/icons/Close";
+import React from "react";
+import { useSnackbar } from "notistack";
 
 interface SnackbarUploadProps {
-    
+    id: string | number;
 };
 
-const SnackbarUpload: React.FC<SnackbarUploadProps> = (props) => {
+const SnackbarUpload = React.forwardRef<any, SnackbarUploadProps>((props, ref) => {
+    const { id } = props;
+    const { closeSnackbar } = useSnackbar();
     return (
-        <Card>
+        <Card ref={ref}>
             <CardActions>
                 <Typography variant={"subtitle2"}>
                     Fazendo upload de 10 vídeo(s)
@@ -21,6 +25,7 @@ const SnackbarUpload: React.FC<SnackbarUploadProps> = (props) => {
                     </IconButton>
                     <IconButton
                         color={"inherit"}
+                        onClick={() => closeSnackbar(id)}
                     >
                         <CloseIcon />
                     </IconButton>
@@ -33,6 +38,6 @@ const SnackbarUpload: React.FC<SnackbarUploadProps> = (props) => {
             </Collapse>
         </Card>
     );
-};
+});
 
 export default SnackbarUpload;
