@@ -46,7 +46,7 @@ const UploadItem: React.FC<UploadItemProps> = (props) => {
                             </Typography>
                         }
                     />
-                    {/* <UploadProgress size={30} /> */}
+                    <UploadProgress size={30} />
                     <UploadAction />
                 </ListItem>
             </Tooltip>

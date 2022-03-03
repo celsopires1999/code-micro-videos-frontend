@@ -10,9 +10,6 @@ const useStyles = makeStyles((theme: Theme) => ({
     errorIcon: {
         color: theme.palette.error.main
     },
-    deleteIcon: {
-        color: theme.palette.primary.main
-    },
 }));
 
 interface UploadActionProps {
@@ -25,19 +22,19 @@ const UploadAction: React.FC<UploadActionProps> = (props) => {
             <ListItemSecondaryAction>
                 <span>
                     {
-                        <IconButton className={classes.successIcon} edge={"end"}>
+                        <IconButton className={classes.successIcon} edge={'end'}>
                             <CheckCircleIcon />
                         </IconButton>
                     }
                     {
-                        <IconButton className={classes.errorIcon} edge={"end"}>
+                        <IconButton className={classes.errorIcon} edge={'end'}>
                             <ErrorIcon />
                         </IconButton>
                     }
                 </span>
                 <span>
                     {
-                        <IconButton className={classes.deleteIcon} edge={"end"}>
+                        <IconButton color={'primary'} edge={'end'}>
                             <DeleteIcon />
                         </IconButton>
                     }
