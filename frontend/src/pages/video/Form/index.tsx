@@ -1,6 +1,6 @@
 import { Card, CardContent, Checkbox, FormControlLabel, FormHelperText, Grid, TextField, Theme, Typography, useMediaQuery, useTheme } from "@material-ui/core";
 import { useSnackbar } from "notistack";
-import { createRef, MutableRefObject, useCallback, useContext, useEffect, useRef, useState } from "react";
+import { createRef, MutableRefObject, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useParams, useHistory } from "react-router";
 import * as yup from '../../../util/vendor/yup';
@@ -128,27 +128,44 @@ export const Form = () => {
     const classes = useStyles();
 
     // Teste **** início ***
-
     const uploads = useSelector<UploadState, Upload[]>(
         (state) => state.uploads
     );
 
     const dispatch = useDispatch();
 
-    setTimeout(() => {
-        const obj: any = {
-            video: {
-                id: '1',
-                tittle: 'e o vento levou'
-            },
-            files: [
-                // {fileField: 'trailer', file: new File([''], 'teste.mp4',)}
-            ]
-        }
-        dispatch(Creators.addUpload(obj))
-        dispatch(Creators.addUpload(obj))
-    }, 1000)
-
+    useMemo(() => {
+        setTimeout(() => {
+            const obj: any = {
+                video: {
+                    id: '1',
+                    tittle: 'e o vento levou'
+                },
+                files: [
+                    {
+                        fileField: 'trailer_file', file: new File([''], 'teste.mp4',)
+                    },
+                    {
+                        fileField: 'video_file', file: new File([''], 'teste.mp4',)
+                    },
+                ]
+            }
+            dispatch(Creators.addUpload(obj))
+            const progress1 = {
+                fileField: 'trailer_file',
+                progress: 10,
+                video: { id: '1' }
+            } as any;
+            dispatch(Creators.updateProgress(progress1));
+            const progress2 = {
+                fileField: 'video_file',
+                progress: 20,
+                video: { id: '1' }
+            } as any;
+            dispatch(Creators.updateProgress(progress2));
+            // dispatch(Creators.addUpload(obj))
+        }, 1000)
+    }, [true]);
     // Teste *** fim ***
 
     useEffect(() => {

@@ -71,23 +71,26 @@ function updateProgress(state = INITIAL_STATE, action: Typings.UpdateProgressAct
     const fileField = action.payload.fileField;
     const { indexUpload, indexFile } = findIndexUploadAndFile(state, videoId, fileField);
 
+    if (typeof indexUpload === "undefined" || typeof indexFile === "undefined") { return state }
 
-    return {
-        uploads: []
-    }
+    const upload = state.uploads[indexUpload];
+    const file = upload.files[indexFile];
 
-    /*
- [
-     {
-         video: {},
-         progress: 0,
-         files: [
-             {fileField: 'banner', progress: 0, ...otherFields}
-         ]
-     }
- ]
- 
- */
+    const uploads = update(state.uploads, {
+        [indexUpload]: {
+            $apply(upload) {
+                const files = update(upload.files, {
+                    [indexFile]: {
+                        $set: { ...file, progress: action.payload.progress }
+                    }
+                })
+                const progress = calculateGlobalProgress(files);
+                return { ...upload, progress, files }
+            }
+        }
+    });
+
+    return { uploads }
 }
 
 function findIndexUploadAndFile(state: Typings.State, videoId: string, fileField: string): { indexUpload?: number, indexFile?: number } {
@@ -100,10 +103,19 @@ function findIndexUploadAndFile(state: Typings.State, videoId: string, fileField
     return indexFile === -1 ? {} : { indexUpload, indexFile };
 }
 
-function findIndexUpload(state: Typings.State, id: string) {
+function calculateGlobalProgress(files: Array<{ progress: number }>): number {
+    const countFiles = files.length;
+    if (!countFiles) { return 0 }
+
+    const sumProgess = files.reduce((sum, file) => sum = sum + file.progress, 0);
+
+    return sumProgess / countFiles;
+}
+
+function findIndexUpload(state: Typings.State, id: string): number {
     return state.uploads.findIndex((upload) => (upload.video.id === id));
 }
 
-function findIndexFile(files: Array<{ fileField: string }>, fileField: string) {
+function findIndexFile(files: Array<{ fileField: string }>, fileField: string): number {
     return files.findIndex((file) => (file.fileField === fileField));
 }
