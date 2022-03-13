@@ -1,4 +1,4 @@
-import { AxiosError } from "axios";
+import { Axios, AxiosError } from "axios";
 import { AnyAction } from "redux";
 import { Video } from "../../util/models";
 
@@ -40,6 +40,15 @@ export interface UpdateProgressAction extends AnyAction {
     }
 }
 
+export interface SetUploadErrorAction extends AnyAction {
+    payload: {
+        video: Video,
+        fileField: string,
+        error: AxiosError
+    }
+}
+
 export type Actions = AddUploadAction
     | RemoveUploadAction
-    | UpdateProgressAction;
+    | UpdateProgressAction
+    | SetUploadErrorAction;
