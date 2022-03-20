@@ -1,4 +1,4 @@
-import { Axios, AxiosError } from "axios";
+import { AxiosError } from "axios";
 import { AnyAction } from "redux";
 import { Video } from "../../util/models";
 
