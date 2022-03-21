@@ -11,7 +11,7 @@ use Illuminate\Http\Request;
 class VideoController extends BasicCrudController
 {
     private $rules;
-    
+
     public function __construct()
     {
         $this->rules = [
@@ -23,13 +23,13 @@ class VideoController extends BasicCrudController
             'duration' => 'required|integer|min:1',
             'categories_id' => 'required|array|exists:categories,id,deleted_at,NULL',
             'genres_id' => [
-                'required', 
-                'array', 
+                'required',
+                'array',
                 'exists:genres,id,deleted_at,NULL',
             ],
             'cast_members_id' => [
-                'required', 
-                'array', 
+                'required',
+                'array',
                 'exists:cast_members,id,deleted_at,NULL',
             ],
             'thumb_file' => 'image|max:' . Video::THUMB_FILE_MAX_SIZE,
@@ -54,7 +54,10 @@ class VideoController extends BasicCrudController
     {
         $obj = $this->findOrFail($id);
         $this->addRuleIfGenreHasCategories($request);
-        $validatedData = $this->validate($request, $this->rulesUpdate());
+        $validatedData = $this->validate(
+            $request,
+            $request->isMethod('PUT') ? $this->rulesUpdate() : $this->rulesPatch()
+        );
         $obj->update($validatedData);
         $obj->load(['categories', 'genres']);
 
@@ -69,6 +72,21 @@ class VideoController extends BasicCrudController
         $this->rules['genres_id'][] = new GenresHasCategoriesRule(
             $categoriesId
         );
+    }
+
+    protected function rulesPatch()
+    {
+        return array_map(function ($rules) {
+            if (is_array($rules)) {
+                $exists = in_array("required", $rules);
+                if ($exists) {
+                    array_unshift($rules, "sometimes");
+                }
+            } else {
+                return str_replace("required", "sometimes|required", $rules);
+            }
+            return $rules;
+        }, $this->rulesUpdate());
     }
 
     protected function model()
