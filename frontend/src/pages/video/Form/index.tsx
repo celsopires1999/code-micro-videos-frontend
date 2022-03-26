@@ -131,7 +131,7 @@ export const Form = () => {
     const uploads = useSelector<UploadState, Upload[]>(
         (state) => state.uploads
     );
-
+    console.log('==>> ', uploads);
     const dispatch = useDispatch();
 
     useMemo(() => {
