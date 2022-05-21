@@ -150,7 +150,7 @@ export const Form = () => {
                     },
                 ]
             }
-            dispatch(Creators.addUpload(obj))
+            dispatch(Creators.addUpload(obj));
             const progress1 = {
                 fileField: 'trailer_file',
                 progress: 10,
