@@ -1,6 +1,6 @@
 import { IconButton, MuiThemeProvider } from '@material-ui/core';
 import EditIcon from '@material-ui/icons/Edit';
-import { useEffect, useRef, useState } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import genreHttp from '../../util/http/genre-http';
 import format from 'date-fns/format';
@@ -14,6 +14,7 @@ import * as yup from '../../util/vendor/yup';
 import FilterResetButton from '../../components/Table/FilterResetButton';
 // import { Creators } from '../../store/filter';
 import categoryHttp from '../../util/http/category-http';
+import LoadingContext from '../../components/loading/LoadingContext';
 
 const columnsDefinition: TableColumn[] = [
     {
@@ -99,7 +100,8 @@ const Table = () => {
     const subscribed = useRef(true);
     const [data, setData] = useState<Genre[]>([]);
     // const [categories, setCategories] = useState<Category[]>([]);
-    const [loading, setLoading] = useState<boolean>(false);
+    const loading = useContext(LoadingContext);
+    
     const { enqueueSnackbar } = useSnackbar();
     const tableRef = useRef() as React.MutableRefObject<MuiDataTableRefComponent>;
     const {
@@ -195,7 +197,6 @@ const Table = () => {
     ]);
 
     async function getData() {
-        setLoading(true);
         try {
             const { data } = await genreHttp.list<ListResponse<Genre>>({
                 queryParams: {
@@ -224,9 +225,7 @@ const Table = () => {
                 `Não foi possível encontrar as informações`,
                 { variant: 'error' }
             );
-        } finally {
-            setLoading(false);
-        }
+        } 
     }
 
     return (

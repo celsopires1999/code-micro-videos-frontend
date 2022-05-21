@@ -28,7 +28,8 @@
 	"extensions": [
 		"bmewburn.vscode-intelephense-client",
 		"calebporzio.better-phpunit",
-		"felixfbecker.php-debug",
+		// "felixfbecker.php-debug",
+		"xdebug.php-pack",
 		"humao.rest-client",
 	]
 

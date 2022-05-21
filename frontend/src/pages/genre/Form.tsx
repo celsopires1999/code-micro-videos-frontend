@@ -9,6 +9,7 @@ import genreHttp from "../../util/http/genre-http";
 import { useSnackbar } from "notistack";
 import { Category, Genre } from "../../util/models";
 import DefaultForm from "../../components/DefaultForm";
+import LoadingContext from "../../components/loading/LoadingContext";
 
 const useStyles = makeStyles((theme: Theme) => {
     return {
@@ -51,7 +52,7 @@ export const Form = () => {
     const [categories, setCategories] = useState<Category[]>([]);
     const { id }: any = useParams();
     const [genre, setGenre] = useState<Genre | null>(null);
-    const [loading, setLoading] = useState<boolean>(false);
+    const loading = React.useContext(LoadingContext);
 
     const buttonProps: ButtonProps = {
         className: classes.submit,
@@ -65,7 +66,6 @@ export const Form = () => {
         let isSubscribed = true;
 
         (async () => {
-            setLoading(true);
             const promises = [categoryHttp.list({ queryParams: { all: '' } })];
             if (id) {
                 promises.push(genreHttp.get(id));
@@ -90,9 +90,7 @@ export const Form = () => {
                     `Não foi possível carregar as informações`,
                     { variant: 'error' }
                 )
-            } finally {
-                setLoading(false);
-            }
+            } 
         })();
 
         return () => {
@@ -107,7 +105,6 @@ export const Form = () => {
     }, [register]);
 
     function onSubmit(formData, event) {
-        setLoading(true)
         const http = !genre
             ? genreHttp
                 .create(formData)
@@ -140,7 +137,7 @@ export const Form = () => {
                         { variant: 'error' });
                 }
             )
-            .finally(() => setLoading(false))
+            // .finally(() => setLoading(false))
     }
 
     return (

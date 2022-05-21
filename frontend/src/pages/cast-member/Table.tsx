@@ -3,7 +3,7 @@ import EditIcon from '@material-ui/icons/Edit';
 import format from 'date-fns/format';
 import parseISO from 'date-fns/parseISO';
 import { useSnackbar } from 'notistack';
-import { useEffect, useRef, useState } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import DefaultTable, { makeActionStyles, TableColumn, MuiDataTableRefComponent } from '../../components/Table';
 import FilterResetButton from '../../components/Table/FilterResetButton';
@@ -13,6 +13,7 @@ import castMemberHttp from '../../util/http/cast-member-http';
 import { CastMember, CastMemberTypeMap, ListResponse } from '../../util/models';
 import * as yup from '../../util/vendor/yup';
 import { invert } from 'lodash';
+import LoadingContext from '../../components/loading/LoadingContext';
 
 
 const castMemberNames = Object.values(CastMemberTypeMap);
@@ -88,7 +89,7 @@ const rowsPerPageOptions = [15, 25, 50];
 const Table = () => {
     const subscribed = useRef(true);
     const [data, setData] = useState<CastMember[]>([]);
-    const [loading, setLoading] = useState<boolean>(false);
+    const loading = useContext(LoadingContext);
     const { enqueueSnackbar } = useSnackbar();
     const tableRef = useRef() as React.MutableRefObject<MuiDataTableRefComponent>;
 
@@ -160,7 +161,6 @@ const Table = () => {
     ]);
 
     async function getData() {
-        setLoading(true);
         try {
             const { data } = await castMemberHttp.list<ListResponse<CastMember>>({
                 queryParams: {
@@ -189,9 +189,7 @@ const Table = () => {
                 `Não foi possível encontrar as informações`,
                 { variant: 'error' }
             );
-        } finally {
-            setLoading(false);
-        }
+        } 
     }
 
     return (

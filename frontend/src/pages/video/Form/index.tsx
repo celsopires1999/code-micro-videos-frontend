@@ -1,6 +1,6 @@
 import { Card, CardContent, Checkbox, FormControlLabel, FormHelperText, Grid, TextField, Theme, Typography, useMediaQuery, useTheme } from "@material-ui/core";
 import { useSnackbar } from "notistack";
-import { createRef, MutableRefObject, useCallback, useEffect, useRef, useState } from "react";
+import { createRef, MutableRefObject, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useParams, useHistory } from "react-router";
 import * as yup from '../../../util/vendor/yup';
@@ -16,6 +16,12 @@ import CategoryField, { CategoryFieldComponent } from "./CategoryField";
 import CastMemberField, { CastMemberFieldComponent } from "./CastMemberField";
 import { omit, zipObject } from "lodash";
 import { InputFileComponent } from "../../../components/InputFile";
+import useSnackbarFormError from "../../../hooks/useSnackbarFormError";
+import LoadingContext from "../../../components/loading/LoadingContext";
+import SnackbarUpload from "../../../components/SnackbarUpload";
+import { useDispatch, useSelector } from "react-redux";
+import { UploadState as UploadState, Upload, UploadModule } from "../../../store/upload/types";
+import { Creators } from "../../../store/upload";
 
 const useStyles = makeStyles((theme: Theme) => ({
     cardUpload: {
@@ -83,7 +89,8 @@ export const Form = () => {
         errors,
         reset,
         watch,
-        triggerValidation
+        triggerValidation,
+        formState
     } = useForm<{
         title,
         description,
@@ -104,12 +111,12 @@ export const Form = () => {
             opened: false,
         }
     });
-
+    useSnackbarFormError(formState.submitCount, errors);
     const { enqueueSnackbar } = useSnackbar();
     const history = useHistory();
     const { id }: any = useParams();
     const [video, setVideo] = useState<Video | null>(null);
-    const [loading, setLoading] = useState<boolean>(false);
+    const loading = useContext(LoadingContext);
     const theme = useTheme();
     const isGreaterMd = useMediaQuery(theme.breakpoints.up('md'));
     const castMemberRef = useRef() as MutableRefObject<CastMemberFieldComponent>;
@@ -119,6 +126,47 @@ export const Form = () => {
         zipObject(fileFields, fileFields.map(() => createRef()))
     ) as MutableRefObject<{ [key: string]: MutableRefObject<InputFileComponent> }>;
     const classes = useStyles();
+
+    // Teste **** início ***
+    const uploads = useSelector<UploadModule, Upload[]>(
+        (state) => state.upload.uploads
+    );
+    console.log('==>> ', uploads);
+    const dispatch = useDispatch();
+
+    useMemo(() => {
+        setTimeout(() => {
+            const obj: any = {
+                video: {
+                    id: '13f0df4b-9125-429f-888b-96799fae6840',
+                    tittle: 'e o vento levou'
+                },
+                files: [
+                    {
+                        fileField: 'trailer_file', file: new File([''], 'teste.mp4',)
+                    },
+                    {
+                        fileField: 'video_file', file: new File([''], 'teste.mp4',)
+                    },
+                ]
+            }
+            dispatch(Creators.addUpload(obj))
+            const progress1 = {
+                fileField: 'trailer_file',
+                progress: 10,
+                video: { id: '13f0df4b-9125-429f-888b-96799fae6840' }
+            } as any;
+            dispatch(Creators.updateProgress(progress1));
+            const progress2 = {
+                fileField: 'video_file',
+                progress: 20,
+                video: { id: '13f0df4b-9125-429f-888b-96799fae6840' }
+            } as any;
+            dispatch(Creators.updateProgress(progress2));
+            // dispatch(Creators.addUpload(obj))
+        }, 1000)
+    }, [true]);
+    // Teste *** fim ***
 
     useEffect(() => {
         [
@@ -142,13 +190,26 @@ export const Form = () => {
     }, [castMemberRef, categoryRef, genreRef, reset, uploadsRef]);
 
     useEffect(() => {
+        enqueueSnackbar('', {
+            key: 'snackbar-upload',
+            persist: true,
+            anchorOrigin: {
+                vertical: 'bottom',
+                horizontal: 'right'
+            },
+            content: (key, message) => {
+                const id = key as any;
+                return (
+                    <SnackbarUpload id={id} />
+                )
+            }
+        });
         if (!id) {
             return
         }
         let isSubscribed = true;
 
         (async () => {
-            setLoading(true);
             try {
                 const { data } = await videoHttp.get(id);
                 if (isSubscribed) {
@@ -162,8 +223,6 @@ export const Form = () => {
                     `Não foi possível encontrar o vídeo: ${id}`,
                     { variant: 'error' }
                 );
-            } finally {
-                setLoading(false);
             }
         })();
 
@@ -179,7 +238,6 @@ export const Form = () => {
         sendData['cast_members_id'] = formData.cast_members.map(castMember => castMember.id);
         sendData['genres_id'] = formData.genres.map(genre => genre.id);
         sendData['categories_id'] = formData.categories.map(category => category.id);
-        setLoading(true);
         try {
             const http = !video
                 ? videoHttp.create(sendData)
@@ -206,8 +264,6 @@ export const Form = () => {
                 'Não foi possível gravar o vídeo',
                 { variant: 'error' }
             );
-        } finally {
-            setLoading(false);
         }
     }
     return (
