@@ -4,6 +4,7 @@ import {
     addGlobalRequestInterceptor, addGlobalResponseInterceptor,
     removeGlobalRequestInterceptor, removeGlobalResponseInterceptor
 } from "../../util/http";
+import { omit } from "lodash";
 
 const LoadingProvider = (props) => {
     const [loading, setLoading] = useState<boolean>(false);
@@ -13,10 +14,12 @@ const LoadingProvider = (props) => {
         let isSubscribed = true;
         // axios.interceptors.request.use();
         const requestIds = addGlobalRequestInterceptor((config) => {
-            if (isSubscribed) {
+            // if (isSubscribed) {
+            if (isSubscribed && !config.headers!.hasOwnProperty("ignoreLoading")) {
                 setLoading(true);
                 setCountRequest((prevCountRequest) => prevCountRequest + 1);
             };
+            config.headers = omit(config.headers, "ignoreLoading");
             return config;
         });
         // axios.interceptors.response.use();

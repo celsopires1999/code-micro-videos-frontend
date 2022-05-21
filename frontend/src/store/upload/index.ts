@@ -22,7 +22,7 @@ export const { Types, Creators } = createActions<{
         setUploadError: ['payload'],
     });
 
-export const INITIAL_STATE: Typings.State = {
+export const INITIAL_STATE: Typings.UploadState = {
     uploads: [],
 };
 
@@ -35,7 +35,7 @@ const reducer = createReducer(INITIAL_STATE, {
 
 export default reducer;
 
-function addUpload(state = INITIAL_STATE, action: Typings.AddUploadAction): Typings.State {
+function addUpload(state = INITIAL_STATE, action: Typings.AddUploadAction): Typings.UploadState {
     if (!action.payload.files.length) { return state };
 
     const index = findIndexUpload(state, action.payload.video.id);
@@ -63,14 +63,14 @@ function addUpload(state = INITIAL_STATE, action: Typings.AddUploadAction): Typi
     }
 }
 
-function removeUpload(state = INITIAL_STATE, action: Typings.RemoveUploadAction): Typings.State {
+function removeUpload(state = INITIAL_STATE, action: Typings.RemoveUploadAction): Typings.UploadState {
     const uploads = state.uploads.filter(upload => upload.video.id !== action.payload.id);
     if (uploads.length === state.uploads.length) { return state }
 
     return { uploads }
 }
 
-function updateProgress(state = INITIAL_STATE, action: Typings.UpdateProgressAction): Typings.State {
+function updateProgress(state = INITIAL_STATE, action: Typings.UpdateProgressAction): Typings.UploadState {
     const videoId = action.payload.video.id;
     const fileField = action.payload.fileField;
     const { indexUpload, indexFile } = findIndexUploadAndFile(state, videoId, fileField);
@@ -99,7 +99,7 @@ function updateProgress(state = INITIAL_STATE, action: Typings.UpdateProgressAct
     return { uploads }
 }
 
-function setUploadError(state = INITIAL_STATE, action: Typings.SetUploadErrorAction): Typings.State {
+function setUploadError(state = INITIAL_STATE, action: Typings.SetUploadErrorAction): Typings.UploadState {
     const videoId = action.payload.video.id;
     const fileField = action.payload.fileField;
     const { indexUpload, indexFile } = findIndexUploadAndFile(state, videoId, fileField);
@@ -122,7 +122,7 @@ function setUploadError(state = INITIAL_STATE, action: Typings.SetUploadErrorAct
     return { uploads }
 }
 
-function findIndexUploadAndFile(state: Typings.State, videoId: string, fileField: string): { indexUpload?: number, indexFile?: number } {
+function findIndexUploadAndFile(state: Typings.UploadState, videoId: string, fileField: string): { indexUpload?: number, indexFile?: number } {
     const indexUpload = findIndexUpload(state, videoId);
     if (indexUpload === -1) { return {} }
 
@@ -141,7 +141,7 @@ function calculateGlobalProgress(files: Array<{ progress: number }>): number {
     return sumProgess / countFiles;
 }
 
-function findIndexUpload(state: Typings.State, id: string): number {
+function findIndexUpload(state: Typings.UploadState, id: string): number {
     return state.uploads.findIndex((upload) => (upload.video.id === id));
 }
 
