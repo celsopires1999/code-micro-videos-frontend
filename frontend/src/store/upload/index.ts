@@ -91,6 +91,7 @@ function updateProgress(state = INITIAL_STATE, action: Typings.UpdateProgressAct
                     }
                 })
                 const progress = calculateGlobalProgress(files);
+                console.log("==>> updateProgess: ", { ...upload, progress, files });
                 return { ...upload, progress, files }
             }
         }
@@ -136,7 +137,7 @@ function calculateGlobalProgress(files: Array<{ progress: number }>): number {
     const countFiles = files.length;
     if (!countFiles) { return 0 }
 
-    const sumProgess = files.reduce((sum, file) => sum = sum + file.progress, 0);
+    const sumProgess = files.reduce((sum, file) => sum + file.progress, 0);
 
     return sumProgess / countFiles;
 }

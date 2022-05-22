@@ -139,7 +139,7 @@ export const Form = () => {
             const obj: any = {
                 video: {
                     id: '13f0df4b-9125-429f-888b-96799fae6840',
-                    tittle: 'e o vento levou'
+                    title: 'e o vento levou'
                 },
                 files: [
                     {
@@ -153,13 +153,13 @@ export const Form = () => {
             dispatch(Creators.addUpload(obj));
             const progress1 = {
                 fileField: 'trailer_file',
-                progress: 10,
+                progress: 0.1,
                 video: { id: '13f0df4b-9125-429f-888b-96799fae6840' }
             } as any;
             dispatch(Creators.updateProgress(progress1));
             const progress2 = {
                 fileField: 'video_file',
-                progress: 20,
+                progress: 0.2,
                 video: { id: '13f0df4b-9125-429f-888b-96799fae6840' }
             } as any;
             dispatch(Creators.updateProgress(progress2));
