@@ -1,5 +1,6 @@
 import { Divider, ListItem, ListItemIcon, ListItemText, makeStyles, Theme, Tooltip, Typography } from "@material-ui/core";
 import MovieIcon from "@material-ui/icons/Movie"
+import { hasError } from "../../store/upload/getters";
 import { Upload } from "../../store/upload/types";
 import UploadProgress from "../UploadProgress";
 import UploadAction from "./UploadAction";
@@ -28,10 +29,16 @@ interface UploadItemProps {
 const UploadItem: React.FC<UploadItemProps> = (props) => {
     const { upload } = props;
     const classes = useStyles();
+    const error = hasError(upload);
+
     return (
         <>
             <Tooltip
-                title={"Não foi possível fazer o upload, clique para mais detalhes"}
+                disableFocusListener
+                disableTouchListener
+                title={
+                    error ? "Não foi possível fazer o upload, clique para mais detalhes" : ""
+                }
                 placement={'left'}
             >
                 <ListItem

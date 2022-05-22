@@ -8,6 +8,7 @@ import { FileUpload, Upload } from "../../store/upload/types";
 import { useDispatch } from "react-redux";
 import { Creators } from "../../store/upload";
 import videoHttp from "../../util/http/video-http";
+import { hasError } from "../../store/upload/getters";
 
 const useStyles = makeStyles((theme: Theme) => ({
     successIcon: {
@@ -32,6 +33,8 @@ interface UploadActionProps {
 const UploadAction: React.FC<UploadActionProps> = (props) => {
     const { uploadOrFile } = props;
     const classes = useStyles();
+    const error = hasError(uploadOrFile);
+
     const dispatch = useDispatch();
 
     return (
@@ -39,9 +42,10 @@ const UploadAction: React.FC<UploadActionProps> = (props) => {
             <>
                 {
                     uploadOrFile.progress === 1 &&
+                    !error &&
                     <CheckCircleIcon className={classes.successIcon} />
                 }
-                <ErrorIcon className={classes.errorIcon} />
+                {error && <ErrorIcon className={classes.errorIcon} />}
                 <>
                     <Divider className={classes.divider} orientation={'vertical'} />
                     <IconButton
