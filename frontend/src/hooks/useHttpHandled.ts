@@ -1,22 +1,46 @@
-import { useSnackbar } from 'notistack';
+// import { useSnackbar } from 'notistack';
+// import axios from 'axios';
+
+// const useHttpHandled = () => {
+//     const { enqueueSnackbar } = useSnackbar();
+//     return async (request: Promise<any>) => {
+//         try {
+//             const { data } = await request;
+//             return data;
+//         } catch (error) {
+//             if (!axios.isCancel(error)) {
+//                 enqueueSnackbar(
+//                     `Não foi possível carregar as informações`,
+//                     { variant: 'error' }
+//                 );
+//             }
+//             throw error;
+//         }
+//     }
+// }
+
+// export default useHttpHandled;
+import { useSnackbar } from "notistack";
 import axios from 'axios';
+import { useCallback } from "react";
 
 const useHttpHandled = () => {
-    const { enqueueSnackbar } = useSnackbar();
-    return async (request: Promise<any>) => {
+    const { enqueueSnackbar } = useSnackbar(); //notistack
+    return useCallback(async (request: Promise<any>) => {
         try {
             const { data } = await request;
             return data;
-        } catch (error) {
-            if (!axios.isCancel(error)) {
+        } catch (e) {
+            console.error(e);
+            if (!axios.isCancel(e)) {
                 enqueueSnackbar(
-                    `Não foi possível carregar as informações`,
-                    { variant: 'error' }
+                    'Não foi possível carregar as informações',
+                    { variant: 'error', }
                 );
             }
-            throw error;
+            throw e;
         }
-    }
-}
+    }, [enqueueSnackbar]);
+};
 
 export default useHttpHandled;

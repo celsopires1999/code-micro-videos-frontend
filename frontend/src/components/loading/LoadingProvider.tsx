@@ -22,13 +22,13 @@ const LoadingProvider = (props) => {
         });
         // axios.interceptors.response.use();
         const responseIds = addGlobalResponseInterceptor((response) => {
-            if (isSubscribed && !response.config.headers?.hasOwnProperty("x-ignore-loading")) {
+            if (isSubscribed && !response?.config?.headers?.hasOwnProperty("x-ignore-loading")) {
                 decrementCountRequest()
             };
             return response;
         },
             (error) => {
-                if (isSubscribed && !error.config.headers?.hasOwnProperty("x-ignore-loading")) {
+                if (isSubscribed && !error?.config?.headers?.hasOwnProperty("x-ignore-loading")) {
                     decrementCountRequest()
                 };
                 return Promise.reject(error);

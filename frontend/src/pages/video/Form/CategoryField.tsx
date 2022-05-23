@@ -1,6 +1,6 @@
 import { FormControl, FormControlProps, FormHelperText, makeStyles, Theme, Typography, useTheme } from "@material-ui/core";
 import { grey } from "@material-ui/core/colors";
-import React, { MutableRefObject, useImperativeHandle, useRef } from "react";
+import React, { MutableRefObject, useCallback, useImperativeHandle, useRef } from "react";
 import { RefAttributes } from "react";
 import GridSelected from "../../../components/GridSelected";
 import GridSelectedItem from "../../../components/GridSelectedItem";
@@ -36,17 +36,31 @@ const CategoryField = React.forwardRef<CategoryFieldComponent, CategoryFieldProp
     const { addItem, removeItem } = useCollectionManager(categories, setCategories);
     const autocompleteRef = useRef() as MutableRefObject<AsyncAutoCompleteComponent>;
     const theme = useTheme();
-    async function fetchOptions(searchText) {
+
+    // async function fetchOptionsxxxx(searchText) {
+    //     return autocompleteHttp(
+    //         categoryHttp.
+    //             list({
+    //                 queryParams: {
+    //                     genres: genres.map(genre => genre.id).join(','),
+    //                     all: ""
+    //                 }
+    //             })
+    //     ).then((data) => data.data).catch(error => console.error(error));
+    // }
+
+    const fetchOptions = useCallback((searchText) => {
         return autocompleteHttp(
-            categoryHttp.
-                list({
+            categoryHttp
+                .list({
                     queryParams: {
                         genres: genres.map(genre => genre.id).join(','),
                         all: ""
                     }
                 })
-        ).then((data) => data.data).catch(error => console.error(error));
-    }
+        ).then(data => data.data)
+    }, [autocompleteHttp]);
+
     useImperativeHandle(ref, () => ({
         clear: () => autocompleteRef.current.clear()
     }));

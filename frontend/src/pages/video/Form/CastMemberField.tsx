@@ -1,5 +1,5 @@
 import { FormControl, FormControlProps, FormHelperText, Typography } from "@material-ui/core";
-import React, { MutableRefObject, useImperativeHandle, useRef } from "react";
+import React, { MutableRefObject, useCallback, useImperativeHandle, useRef } from "react";
 import { RefAttributes } from "react";
 import GridSelected from "../../../components/GridSelected";
 import GridSelectedItem from "../../../components/GridSelectedItem";
@@ -28,20 +28,34 @@ const CastMemberField = React.forwardRef<CastMemberFieldComponent, CastMemberFie
     const autocompleteHttp = useHttpHandled();
     const { addItem, removeItem } = useCollectionManager(castMembers, setCastMembers);
     const autocompleteRef = useRef() as MutableRefObject<AsyncAutoCompleteComponent>;
-    async function fetchOptions(searchText) {
+
+    // async function fetchOptions(searchText) {
+    //     return autocompleteHttp(
+    //         castMemberHttp.
+    //             list({
+    //                 queryParams: {
+    //                     search: searchText, all: "", sort: "name", dir: "asc"
+    //                 }
+    //             })
+    //     ).then((data) => data.data)
+    //         .catch(error => console.error(error));
+    // }
+
+    const fetchOptions = useCallback((searchText) => {
         return autocompleteHttp(
-            castMemberHttp.
-                list({
+            castMemberHttp
+                .list({
                     queryParams: {
-                        search: searchText, all: "", sort: "name", dir: "asc"
+                        search: searchText, all: ""
                     }
                 })
-        ).then((data) => data.data)
-            .catch(error => console.error(error));
-    }
+        ).then(data => data.data)
+    }, [autocompleteHttp]);
+
     useImperativeHandle(ref, () => ({
         clear: () => autocompleteRef.current.clear()
     }));
+
     return (
         <>
             <AsyncAutocomplete

@@ -6,9 +6,11 @@ import { useSnackbar } from 'notistack';
 import { useEffect, useState, useRef, useContext } from 'react';
 import { Link } from 'react-router-dom';
 import { BadgeNo, BadgeYes } from '../../components/Badge';
+import DeleteDialog from '../../components/DeleteDialog';
 import LoadingContext from '../../components/loading/LoadingContext';
 import DefaultTable, { makeActionStyles, TableColumn, MuiDataTableRefComponent } from '../../components/Table';
 import FilterResetButton from '../../components/Table/FilterResetButton';
+import useDeleteCollection from '../../hooks/useDeleteCollections';
 import useFilter from '../../hooks/useFilter';
 // import { Creators } from '../../store/filter';
 import categoryHttp from '../../util/http/category-http';
@@ -91,6 +93,7 @@ const Table = () => {
     const [data, setData] = useState<Category[]>([]);
     const loading = useContext(LoadingContext);
     const { enqueueSnackbar } = useSnackbar();
+    const { openDeleteDialog, setOpenDeleteDialog, rowsToDelete, setRowsToDelete } = useDeleteCollection();
     const tableRef = useRef() as React.MutableRefObject<MuiDataTableRefComponent>;
 
     const {
@@ -179,6 +182,9 @@ const Table = () => {
             if (subscribed.current) {
                 setData(data.data);
                 setTotalRecords(data.meta.total);
+                if (openDeleteDialog) {
+                    setOpenDeleteDialog(false)
+                };
             }
         } catch (error) {
             console.error(error);
@@ -192,8 +198,37 @@ const Table = () => {
         }
     }
 
+    function deleteRows(confirmed: boolean) {
+        if (!confirmed) {
+            setOpenDeleteDialog(false);
+            return;
+        }
+        const ids = rowsToDelete
+            .data
+            .map(value => data[value.index].id)
+            .join(',');
+        categoryHttp
+            .deleteCollection({ ids })
+            .then(response => {
+                enqueueSnackbar(
+                    'Registros excluídos com sucesso',
+                    { variant: 'success' }
+                );
+                if (
+                    rowsToDelete.data.length === filterState.pagination.per_page
+                    && filterState.pagination.page > 1
+                ) {
+                    const page = filterState.pagination.page - 2;
+                    filterManager.changePage(page);
+                } else {
+                    getData()
+                }
+            });
+    }
+
     return (
         <MuiThemeProvider theme={makeActionStyles(columnsDefinition.length - 1)}>
+            <DeleteDialog open={openDeleteDialog} handleClose={deleteRows} />
             <DefaultTable
                 title=""
                 columns={columns}
@@ -209,7 +244,7 @@ const Table = () => {
                     rowsPerPageOptions,
                     count: totalRecords,
                     onFilterChange: (column: any, filterList, type) => {
-                        const columnLocal = !column ? 'is_active'  : column
+                        const columnLocal = !column ? 'is_active' : column
                         const columnIndex = columns.findIndex(c => c.name === columnLocal);
                         filterManager.changeExtraFilter({
                             [columnLocal]: filterList[columnIndex].length ? filterList[columnIndex][0] : null
@@ -227,7 +262,14 @@ const Table = () => {
                     onChangePage: (page) => filterManager.changePage(page),
                     onChangeRowsPerPage: (perPage) => filterManager.changeRowsPerPage(perPage),
                     onColumnSortChange: (changedColumn: string, direction: string) =>
-                        filterManager.changeColumnSort(changedColumn, direction)
+                        filterManager.changeColumnSort(changedColumn, direction),
+                    onRowsDelete: (rowsDeleted: {
+                        lookup: { [dataIndex: number]: boolean };
+                        data: Array<{ index: number; dataIndex: number }>;
+                    }, newTableData: any[]) => {
+                        setRowsToDelete(rowsDeleted as any);
+                        return false;
+                    }
                 }}
             />
         </MuiThemeProvider>
