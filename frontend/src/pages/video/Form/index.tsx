@@ -344,14 +344,6 @@ export const Form = () => {
                                 disabled={loading}
                             />
                         </Grid>
-                        <Grid item xs={12}>
-                            <FormHelperText>
-                                Escolha os gêneros do vídeo
-                            </FormHelperText>
-                            <FormHelperText>
-                                Escolha pelo menos uma categoria de cada gênero
-                            </FormHelperText>
-                        </Grid>
                     </Grid>
 
                 </Grid>

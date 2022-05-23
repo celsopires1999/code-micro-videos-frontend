@@ -1,4 +1,4 @@
-import { FormControl, FormControlProps, FormHelperText, Typography } from "@material-ui/core";
+import { FormControl, FormControlProps, FormHelperText, Typography, useTheme } from "@material-ui/core";
 import React, { MutableRefObject, RefAttributes, useImperativeHandle, useRef } from "react";
 import GridSelected from "../../../components/GridSelected";
 import GridSelectedItem from "../../../components/GridSelectedItem";
@@ -33,6 +33,7 @@ const GenreField = React.forwardRef<GenreFieldComponent, GenreFieldProps>((props
     const { addItem, removeItem } = useCollectionManager(genres, setGenres);
     const autocompleteRef = useRef() as MutableRefObject<AsyncAutoCompleteComponent>;
     const { removeItem: removeCategory } = useCollectionManager(categories, setCategories);
+    const theme = useTheme();
     async function fetchOptions(searchText) {
         return autocompleteHttp(
             genreHttp.
@@ -66,6 +67,9 @@ const GenreField = React.forwardRef<GenreFieldComponent, GenreFieldProps>((props
                     error: error !== undefined
                 }}
             />
+            <FormHelperText style={{ height: theme.spacing(3) }}>
+                Escolha os gêneros do vídeo
+            </FormHelperText>
             <FormControl
                 margin={'normal'}
                 fullWidth

@@ -4,7 +4,6 @@ import {
     addGlobalRequestInterceptor, addGlobalResponseInterceptor,
     removeGlobalRequestInterceptor, removeGlobalResponseInterceptor
 } from "../../util/http";
-import { omit } from "lodash";
 
 const LoadingProvider = (props) => {
     const [loading, setLoading] = useState<boolean>(false);
@@ -15,20 +14,23 @@ const LoadingProvider = (props) => {
         // axios.interceptors.request.use();
         const requestIds = addGlobalRequestInterceptor((config) => {
             // if (isSubscribed) {
-            if (isSubscribed && !config.headers!.hasOwnProperty("ignoreLoading")) {
+            if (isSubscribed && !config.headers!.hasOwnProperty("x-ignore-loading")) {
                 setLoading(true);
                 setCountRequest((prevCountRequest) => prevCountRequest + 1);
             };
-            config.headers = omit(config.headers, "ignoreLoading");
             return config;
         });
         // axios.interceptors.response.use();
         const responseIds = addGlobalResponseInterceptor((response) => {
-            if (isSubscribed) { decrementCountRequest() };
+            if (isSubscribed && !response.config.headers?.hasOwnProperty("x-ignore-loading")) {
+                decrementCountRequest()
+            };
             return response;
         },
             (error) => {
-                if (isSubscribed) { decrementCountRequest() };
+                if (isSubscribed && !error.config.headers?.hasOwnProperty("x-ignore-loading")) {
+                    decrementCountRequest()
+                };
                 return Promise.reject(error);
             });
         return () => {
@@ -39,7 +41,9 @@ const LoadingProvider = (props) => {
     }, [true]);
 
     useEffect(() => {
-        if (!countRequest) { setLoading(false) }
+        if (!countRequest) {
+            setLoading(false)
+        }
     }, [countRequest]);
 
     function decrementCountRequest() {

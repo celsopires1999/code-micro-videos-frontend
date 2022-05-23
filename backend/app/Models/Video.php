@@ -40,6 +40,8 @@ class Video extends Model
         'duration' => 'integer'
     ];
     public $incrementing = false;
+    protected $keyType = 'string';
+    protected $hidden = ['thumb_file', 'banner_file', 'trailer_file', 'video_file'];
     public static $fileFields = ['video_file', 'thumb_file', 'banner_file', 'trailer_file'];
 
     public static function create(array $attributes = [])
@@ -48,7 +50,7 @@ class Video extends Model
         try {
             \DB::beginTransaction();
             /** @var Video $obj */
-            $obj = static::query()->create($attributes); 
+            $obj = static::query()->create($attributes);
             static::handleRelations($obj, $attributes);
             $obj->uploadFiles($files);
             \DB::commit();
@@ -69,7 +71,7 @@ class Video extends Model
             \DB::beginTransaction();
             $saved = parent::update($attributes, $options);
             static::handleRelations($this, $attributes);
-            if ($saved){
+            if ($saved) {
                 $this->uploadFiles($files);
             }
             \DB::commit();
@@ -86,10 +88,10 @@ class Video extends Model
 
     protected static function handleRelations($video, array $attributes)
     {
-        if (isset($attributes['categories_id'])){
+        if (isset($attributes['categories_id'])) {
             $video->categories()->sync($attributes['categories_id']);
         }
-        if (isset($attributes['genres_id'])){
+        if (isset($attributes['genres_id'])) {
             $video->genres()->sync($attributes['genres_id']);
         }
         if (isset($attributes['cast_members_id'])) {

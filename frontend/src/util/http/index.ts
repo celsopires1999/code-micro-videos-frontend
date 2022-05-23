@@ -1,4 +1,4 @@
-import axios, { AxiosRequestConfig, AxiosResponse } from "axios";
+import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from "axios";
 
 export const httpVideo = axios.create({
     baseURL: process.env.REACT_APP_VIDEO_API_URL
@@ -6,7 +6,7 @@ export const httpVideo = axios.create({
 const instances = [httpVideo];
 export function addGlobalRequestInterceptor(
     onFulfilled?: (value: AxiosRequestConfig) => AxiosRequestConfig | Promise<AxiosRequestConfig>,
-    onRejected?: (error: any) => any
+    onRejected?: (error: AxiosError) => any
 ) {
     const ids: number[] = [];
     for (let i of instances) {
@@ -22,7 +22,7 @@ export function removeGlobalRequestInterceptor(ids: number[]) {
 }
 export function addGlobalResponseInterceptor(
     onFulfilled?: (value: AxiosResponse) => AxiosResponse | Promise<AxiosResponse>,
-    onRejected?: (error: any) => any
+    onRejected?: (error: AxiosError) => any
 ) {
     const ids: number[] = [];
     for (let i of instances) {
