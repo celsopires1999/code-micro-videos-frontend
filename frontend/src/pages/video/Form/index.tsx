@@ -1,27 +1,27 @@
-import { Card, CardContent, Checkbox, FormControlLabel, FormHelperText, Grid, TextField, Theme, Typography, useMediaQuery, useTheme } from "@material-ui/core";
-import { useSnackbar } from "notistack";
-import { createRef, MutableRefObject, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
-import { useForm } from "react-hook-form";
-import { useParams, useHistory } from "react-router";
-import * as yup from '../../../util/vendor/yup';
-import { Video, VideoFileFieldsMap } from "../../../util/models";
-import SubmitActions from "../../../components/SubmitActions";
-import DefaultForm from "../../../components/DefaultForm";
-import videoHttp from "../../../util/http/video-http";
-import RatingField from "./RatingField";
-import UploadField from "./UploadField";
+import { Card, CardContent, Checkbox, FormControlLabel, Grid, TextField, Theme, Typography, useMediaQuery, useTheme } from "@material-ui/core";
 import { makeStyles } from "@material-ui/styles";
-import GenreField, { GenreFieldComponent } from "./GenreField";
-import CategoryField, { CategoryFieldComponent } from "./CategoryField";
-import CastMemberField, { CastMemberFieldComponent } from "./CastMemberField";
 import { omit, zipObject } from "lodash";
+import { useSnackbar } from "notistack";
+import { createRef, MutableRefObject, useCallback, useContext, useEffect, useRef, useState } from "react";
+import { useForm } from "react-hook-form";
+import { useDispatch } from "react-redux";
+import { useHistory, useParams } from "react-router";
+import DefaultForm from "../../../components/DefaultForm";
 import { InputFileComponent } from "../../../components/InputFile";
-import useSnackbarFormError from "../../../hooks/useSnackbarFormError";
 import LoadingContext from "../../../components/loading/LoadingContext";
 import SnackbarUpload from "../../../components/SnackbarUpload";
-import { useDispatch, useSelector } from "react-redux";
-import { UploadState as UploadState, Upload, UploadModule, FileInfo } from "../../../store/upload/types";
+import SubmitActions from "../../../components/SubmitActions";
+import useSnackbarFormError from "../../../hooks/useSnackbarFormError";
 import { Creators } from "../../../store/upload";
+import { FileInfo } from "../../../store/upload/types";
+import videoHttp from "../../../util/http/video-http";
+import { Video, VideoFileFieldsMap } from "../../../util/models";
+import * as yup from '../../../util/vendor/yup';
+import CastMemberField, { CastMemberFieldComponent } from "./CastMemberField";
+import CategoryField, { CategoryFieldComponent } from "./CategoryField";
+import GenreField, { GenreFieldComponent } from "./GenreField";
+import RatingField from "./RatingField";
+import UploadField from "./UploadField";
 
 const useStyles = makeStyles((theme: Theme) => ({
     cardUpload: {
@@ -126,10 +126,6 @@ export const Form = () => {
         zipObject(fileFields, fileFields.map(() => createRef()))
     ) as MutableRefObject<{ [key: string]: MutableRefObject<InputFileComponent> }>;
     const classes = useStyles();
-
-    const uploads = useSelector<UploadModule, Upload[]>(
-        (state) => state.upload.uploads
-    );
     const dispatch = useDispatch();
 
     useEffect(() => {
