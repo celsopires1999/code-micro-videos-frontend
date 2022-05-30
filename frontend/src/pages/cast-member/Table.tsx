@@ -145,7 +145,6 @@ const Table = () => {
     (columnType.options as any).filterList = typeFilterValue ? [typeFilterValue] : [];
 
     const getData = useCallback(async ({ search, page, per_page, sort, dir, type }) => {
-        console.log("==>>", type);
         try {
             const { data } = await castMemberHttp.list<ListResponse<CastMember>>({
                 queryParams: {
@@ -154,7 +153,7 @@ const Table = () => {
                     per_page,
                     sort,
                     dir,
-                    ...(type)
+                    type
                 }
             });
             if (subscribed.current) {

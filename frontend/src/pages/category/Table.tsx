@@ -153,10 +153,7 @@ const Table = () => {
                     per_page,
                     sort,
                     dir,
-                    ...(
-                        is_active &&
-                        { is_active: isActive[is_active] }
-                    )
+                    is_active
                 }
             });
             if (subscribed.current) {

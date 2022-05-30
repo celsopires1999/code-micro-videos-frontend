@@ -164,7 +164,7 @@ const Table = () => {
                     per_page,
                     sort,
                     dir,
-                    ...(categories)
+                    categories
                 }
             });
             if (subscribed.current) {
