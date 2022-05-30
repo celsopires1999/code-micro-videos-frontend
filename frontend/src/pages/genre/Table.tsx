@@ -1,6 +1,6 @@
 import { IconButton, MuiThemeProvider } from '@material-ui/core';
 import EditIcon from '@material-ui/icons/Edit';
-import { useContext, useEffect, useRef, useState } from 'react';
+import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import genreHttp from '../../util/http/genre-http';
 import format from 'date-fns/format';
@@ -14,7 +14,6 @@ import useDeleteCollection from '../../hooks/useDeleteCollections';
 import { useSnackbar } from 'notistack';
 import * as yup from '../../util/vendor/yup';
 import FilterResetButton from '../../components/Table/FilterResetButton';
-// import { Creators } from '../../store/filter';
 import categoryHttp from '../../util/http/category-http';
 import LoadingContext from '../../components/loading/LoadingContext';
 
@@ -101,17 +100,43 @@ const rowsPerPageOptions = [15, 25, 50];
 const Table = () => {
     const subscribed = useRef(true);
     const [data, setData] = useState<Genre[]>([]);
-    // const [categories, setCategories] = useState<Category[]>([]);
     const loading = useContext(LoadingContext);
     const { openDeleteDialog, setOpenDeleteDialog, rowsToDelete, setRowsToDelete } = useDeleteCollection();
     const { enqueueSnackbar } = useSnackbar();
     const tableRef = useRef() as React.MutableRefObject<MuiDataTableRefComponent>;
+    const extraFilter = useMemo(() => ({
+        createValidationsSchema: () => {
+            return yup.object().shape({
+                categories: yup.mixed()
+                    .nullable()
+                    .transform(value => {
+                        return !value || value === '' ? undefined : value.split(',')
+                    })
+                    .default(null)
+            })
+        },
+        formatSearchParams: (debouncedFilterState) => {
+            return debouncedFilterState.extraFilter
+                ? {
+                    ...(
+                        debouncedFilterState.extraFilter.categories &&
+                        { categories: debouncedFilterState.extraFilter.categories.join(',') }
+                    )
+                }
+                : undefined
+        },
+        getStateFromURL: (queryParams) => {
+            return {
+                categories: queryParams.get('categories')
+            }
+        }
+    }), []);
     const {
         columns,
+        cleanSearchText,
         filterManager,
         filterState,
         debouncedFilterState,
-        // dispatch,
         totalRecords,
         setTotalRecords,
     } = useFilter({
@@ -120,98 +145,26 @@ const Table = () => {
         rowsPerPage,
         rowsPerPageOptions,
         tableRef,
-        extraFilter: {
-            createValidationsSchema: () => {
-                return yup.object().shape({
-                    categories: yup.mixed()
-                        .nullable()
-                        .transform(value => {
-                            return !value || value === '' ? undefined : value.split(',')
-                        })
-                        .default(null)
-                })
-            },
-            formatSearchParams: (debouncedFilterState) => {
-                return debouncedFilterState.extraFilter
-                    ? {
-                        ...(
-                            debouncedFilterState.extraFilter.categories &&
-                            { categories: debouncedFilterState.extraFilter.categories.join(',') }
-                        )
-                    }
-                    : undefined
-            },
-            getStateFromURL: (queryParams) => {
-                return {
-                    categories: queryParams.get('categories')
-                }
-            }
-        },
+        extraFilter: extraFilter,
     });
+    const searchText = cleanSearchText(debouncedFilterState.search);
 
     const indexColumnCategories = columns.findIndex(c => c.name === 'categories');
     const columnCategories = columns[indexColumnCategories];
     const categoriesFilterValue = filterState.extraFilter && filterState.extraFilter.categories as never;
     (columnCategories.options as any).filterList = categoriesFilterValue ? categoriesFilterValue : [];
 
-    // const serverSideFilterList = columns.map(column => []);
-    // if (categoriesFilterValue) {
-    //     serverSideFilterList[indexColumnCategories] = categoriesFilterValue;
-    // }
 
-    useEffect(() => {
-        let isSubscribed = true;
-        (async () => {
-            try {
-                const { data } = await categoryHttp.list({ queryParams: { all: '' } });
-                if (isSubscribed) {
-                    // setCategories(data.data); 
-                    (columnCategories.options as any).filterOptions.names = data.data.map(category => category.name);
-                }
-            } catch (error) {
-                console.error(error);
-                enqueueSnackbar(
-                    'Não foi possível carregar as informações',
-                    { variant: 'error', }
-                )
-            }
-        })();
-
-        return () => {
-            isSubscribed = false;
-        }
-
-    }, []);
-
-    useEffect(() => {
-        subscribed.current = true
-        filterManager.pushHistory();
-        getData();
-        return () => {
-            subscribed.current = false;
-        }
-    }, [
-        filterManager.cleanSearchText(debouncedFilterState.search),
-        debouncedFilterState.pagination.page,
-        debouncedFilterState.pagination.per_page,
-        debouncedFilterState.order,
-        JSON.stringify(debouncedFilterState.extraFilter)
-    ]);
-
-    async function getData() {
+    const getData = useCallback(async ({ search, page, per_page, sort, dir, categories }) => {
         try {
             const { data } = await genreHttp.list<ListResponse<Genre>>({
                 queryParams: {
-                    search: filterManager.cleanSearchText(filterState.search),
-                    page: filterState.pagination.page,
-                    per_page: filterState.pagination.per_page,
-                    sort: filterState.order.sort,
-                    dir: filterState.order.dir,
-                    ...(
-                        debouncedFilterState.extraFilter &&
-                        debouncedFilterState.extraFilter.categories &&
-                        { categories: debouncedFilterState.extraFilter.categories.join(',') }
-                    )
+                    search,
+                    page,
+                    per_page,
+                    sort,
+                    dir,
+                    ...(categories)
                 }
             });
             if (subscribed.current) {
@@ -231,7 +184,56 @@ const Table = () => {
                 { variant: 'error' }
             );
         }
-    }
+    }, [enqueueSnackbar, openDeleteDialog, setOpenDeleteDialog, setTotalRecords]);
+
+    useEffect(() => {
+        let isSubscribed = true;
+        (async () => {
+            try {
+                const { data } = await categoryHttp.list({ queryParams: { all: '' } });
+                if (isSubscribed) {
+                    (columnCategories.options as any).filterOptions.names = data.data.map(category => category.name);
+                }
+            } catch (error) {
+                console.error(error);
+                enqueueSnackbar(
+                    'Não foi possível carregar as informações',
+                    { variant: 'error', }
+                )
+            }
+        })();
+
+        return () => {
+            isSubscribed = false;
+        }
+
+    }, [columnCategories.options, enqueueSnackbar]);
+
+    useEffect(() => {
+        subscribed.current = true
+        getData({
+            search: searchText,
+            page: debouncedFilterState.pagination.page,
+            per_page: debouncedFilterState.pagination.per_page,
+            sort: debouncedFilterState.order.sort,
+            dir: debouncedFilterState.order.dir,
+            ...(
+                debouncedFilterState.extraFilter &&
+                debouncedFilterState.extraFilter.categories &&
+                { categories: debouncedFilterState.extraFilter.categories.join(',') }
+            )
+        });
+        return () => {
+            subscribed.current = false;
+        }
+    }, [
+        getData,
+        searchText,
+        debouncedFilterState.pagination.page,
+        debouncedFilterState.pagination.per_page,
+        debouncedFilterState.order,
+        debouncedFilterState.extraFilter
+    ]);
 
     function deleteRows(confirmed: boolean) {
         if (!confirmed) {
@@ -256,7 +258,18 @@ const Table = () => {
                     const page = filterState.pagination.page - 2;
                     filterManager.changePage(page);
                 } else {
-                    getData()
+                    getData({
+                        search: searchText,
+                        page: debouncedFilterState.pagination.page,
+                        per_page: debouncedFilterState.pagination.per_page,
+                        sort: debouncedFilterState.order.sort,
+                        dir: debouncedFilterState.order.dir,
+                        ...(
+                            debouncedFilterState.extraFilter &&
+                            debouncedFilterState.extraFilter.categories &&
+                            { categories: debouncedFilterState.extraFilter.categories.join(',') }
+                        )
+                    })
                 }
             });
     }
@@ -288,7 +301,6 @@ const Table = () => {
                     customToolbar: () => (
                         <FilterResetButton
                             handleClick={() => {
-                                // dispatch(Creators.setReset(filterManager.getStateFromURL()))
                                 filterManager.resetFilter()
                             }}
                         />

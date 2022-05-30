@@ -38,7 +38,7 @@ const LoadingProvider = (props) => {
             removeGlobalRequestInterceptor(requestIds);
             removeGlobalResponseInterceptor(responseIds);
         }
-    }, [true]);
+    }, []);
 
     useEffect(() => {
         if (!countRequest) {

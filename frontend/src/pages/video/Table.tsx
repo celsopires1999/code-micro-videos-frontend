@@ -112,6 +112,7 @@ const Table = () => {
 
     const {
         columns,
+        cleanSearchText,
         filterManager,
         filterState,
         debouncedFilterState,
@@ -222,13 +223,12 @@ const Table = () => {
 
     useEffect(() => {
         subscribed.current = true
-        filterManager.pushHistory();
         getData();
         return () => {
             subscribed.current = false;
         }
     }, [
-        filterManager.cleanSearchText(debouncedFilterState.search),
+        cleanSearchText(debouncedFilterState.search),
         debouncedFilterState.pagination.page,
         debouncedFilterState.pagination.per_page,
         debouncedFilterState.order,
@@ -270,7 +270,7 @@ const Table = () => {
                 `Não foi possível encontrar as informações`,
                 { variant: 'error' }
             );
-        } 
+        }
     }
     function deleteRows(confirmed: boolean) {
         if (!confirmed) {
