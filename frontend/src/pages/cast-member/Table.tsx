@@ -3,14 +3,13 @@ import EditIcon from '@material-ui/icons/Edit';
 import format from 'date-fns/format';
 import parseISO from 'date-fns/parseISO';
 import { useSnackbar } from 'notistack';
-import { useContext, useEffect, useRef, useState } from 'react';
+import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import DeleteDialog from '../../components/DeleteDialog';
 import DefaultTable, { makeActionStyles, TableColumn, MuiDataTableRefComponent } from '../../components/Table';
 import FilterResetButton from '../../components/Table/FilterResetButton';
 import useFilter from '../../hooks/useFilter';
 import useDeleteCollection from '../../hooks/useDeleteCollections';
-// import { Creators } from '../../store/filter';
 import castMemberHttp from '../../util/http/cast-member-http';
 import { CastMember, CastMemberTypeMap, ListResponse } from '../../util/models';
 import * as yup from '../../util/vendor/yup';
@@ -95,13 +94,39 @@ const Table = () => {
     const { openDeleteDialog, setOpenDeleteDialog, rowsToDelete, setRowsToDelete } = useDeleteCollection();
     const { enqueueSnackbar } = useSnackbar();
     const tableRef = useRef() as React.MutableRefObject<MuiDataTableRefComponent>;
-
+    const extraFilter = useMemo(() => ({
+        createValidationsSchema: () => {
+            return yup.object().shape({
+                type: yup.string()
+                    .nullable()
+                    .transform(value => {
+                        return !value || !castMemberNames.includes(value) ? undefined : value;
+                    })
+                    .default(null)
+            })
+        },
+        formatSearchParams: (debouncedFilterState) => {
+            return debouncedFilterState.extraFilter
+                ? {
+                    ...(
+                        debouncedFilterState.extraFilter.type &&
+                        { type: debouncedFilterState.extraFilter.type }
+                    )
+                }
+                : undefined
+        },
+        getStateFromURL: (queryParams) => {
+            return {
+                type: queryParams.get('type')
+            }
+        }
+    }), [])
     const {
         columns,
+        cleanSearchText,
         filterManager,
         filterState,
         debouncedFilterState,
-        // dispatch,
         totalRecords,
         setTotalRecords,
     } = useFilter({
@@ -110,73 +135,25 @@ const Table = () => {
         rowsPerPage,
         rowsPerPageOptions,
         tableRef,
-        extraFilter: {
-            createValidationsSchema: () => {
-                return yup.object().shape({
-                    type: yup.string()
-                        .nullable()
-                        .transform(value => {
-                            return !value || !castMemberNames.includes(value) ? undefined : value;
-                        })
-                        .default(null)
-                })
-            },
-            formatSearchParams: (debouncedFilterState) => {
-                return debouncedFilterState.extraFilter
-                    ? {
-                        ...(
-                            debouncedFilterState.extraFilter.type &&
-                            { type: debouncedFilterState.extraFilter.type }
-                        )
-                    }
-                    : undefined
-            },
-            getStateFromURL: (queryParams) => {
-                return {
-                    type: queryParams.get('type')
-                }
-            }
-        },
+        extraFilter: extraFilter,
     });
+    const searchText = cleanSearchText(debouncedFilterState.search);
 
     const indexColumnType = columns.findIndex(c => c.name === 'type');
     const columnType = columns[indexColumnType];
     const typeFilterValue = filterState.extraFilter && filterState.extraFilter.type as never;
     (columnType.options as any).filterList = typeFilterValue ? [typeFilterValue] : [];
-    // const serverSideFilterList = columns.map(column => []);
-    // if (typeFilterValue) {
-    //     serverSideFilterList[indexColumnType] = [typeFilterValue];
-    // }
 
-    useEffect(() => {
-        subscribed.current = true
-        filterManager.pushHistory();
-        getData();
-        return () => {
-            subscribed.current = false;
-        }
-    }, [
-        filterManager.cleanSearchText(debouncedFilterState.search),
-        debouncedFilterState.pagination.page,
-        debouncedFilterState.pagination.per_page,
-        debouncedFilterState.order,
-        JSON.stringify(debouncedFilterState.extraFilter)
-    ]);
-
-    async function getData() {
+    const getData = useCallback(async ({ search, page, per_page, sort, dir, type }) => {
         try {
             const { data } = await castMemberHttp.list<ListResponse<CastMember>>({
                 queryParams: {
-                    search: filterManager.cleanSearchText(filterState.search),
-                    page: filterState.pagination.page,
-                    per_page: filterState.pagination.per_page,
-                    sort: filterState.order.sort,
-                    dir: filterState.order.dir,
-                    ...(
-                        debouncedFilterState.extraFilter &&
-                        debouncedFilterState.extraFilter.type &&
-                        { type: invert(CastMemberTypeMap)[debouncedFilterState.extraFilter.type] }
-                    )
+                    search,
+                    page,
+                    per_page,
+                    sort,
+                    dir,
+                    type
                 }
             });
             if (subscribed.current) {
@@ -196,7 +173,33 @@ const Table = () => {
                 { variant: 'error' }
             );
         }
-    }
+    }, [enqueueSnackbar, openDeleteDialog, setOpenDeleteDialog, setTotalRecords]);
+
+    useEffect(() => {
+        subscribed.current = true
+        getData({
+            search: searchText,
+            page: debouncedFilterState.pagination.page,
+            per_page: debouncedFilterState.pagination.per_page,
+            sort: debouncedFilterState.order.sort,
+            dir: debouncedFilterState.order.dir,
+            ...(
+                debouncedFilterState.extraFilter &&
+                debouncedFilterState.extraFilter.type &&
+                { type: invert(CastMemberTypeMap)[debouncedFilterState.extraFilter.type] }
+            ),
+        });
+        return () => {
+            subscribed.current = false;
+        }
+    }, [
+        getData,
+        searchText,
+        debouncedFilterState.pagination.page,
+        debouncedFilterState.pagination.per_page,
+        debouncedFilterState.order,
+        debouncedFilterState.extraFilter
+    ]);
 
     function deleteRows(confirmed: boolean) {
         if (!confirmed) {
@@ -221,7 +224,18 @@ const Table = () => {
                     const page = filterState.pagination.page - 2;
                     filterManager.changePage(page);
                 } else {
-                    getData()
+                    getData({
+                        search: searchText,
+                        page: debouncedFilterState.pagination.page,
+                        per_page: debouncedFilterState.pagination.per_page,
+                        sort: debouncedFilterState.order.sort,
+                        dir: debouncedFilterState.order.dir,
+                        ...(
+                            debouncedFilterState.extraFilter &&
+                            debouncedFilterState.extraFilter.type &&
+                            { type: invert(CastMemberTypeMap)[debouncedFilterState.extraFilter.type] }
+                        )
+                    })
                 }
             });
     }
@@ -253,7 +267,6 @@ const Table = () => {
                     customToolbar: () => (
                         <FilterResetButton
                             handleClick={() => {
-                                // dispatch(Creators.setReset(filterManager.getStateFromURL()))
                                 filterManager.resetFilter()
                             }}
                         />

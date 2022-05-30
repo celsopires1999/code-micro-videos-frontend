@@ -9,6 +9,7 @@ import { Category } from "../../util/models";
 import SubmitActions from "../../components/SubmitActions";
 import DefaultForm from "../../components/DefaultForm";
 import LoadingContext from "../../components/loading/LoadingContext";
+import useSnackbarFormError from "../../hooks/useSnackbarFormError";
 
 const validationSchema = yup.object().shape({
     name: yup.string()
@@ -26,14 +27,15 @@ export const Form = () => {
         errors,
         reset,
         watch,
-        triggerValidation
-    } = useForm<{name, is_active}>({
+        triggerValidation,
+        formState
+    } = useForm<{ name, is_active }>({
         validationSchema,
         defaultValues: {
             is_active: true
         }
     });
-
+    useSnackbarFormError(formState.submitCount, errors);
     const { enqueueSnackbar } = useSnackbar();
     const history = useHistory();
     const { id }: any = useParams();

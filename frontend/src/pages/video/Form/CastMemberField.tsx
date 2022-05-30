@@ -46,7 +46,7 @@ const CastMemberField = React.forwardRef<CastMemberFieldComponent, CastMemberFie
             castMemberHttp
                 .list({
                     queryParams: {
-                        search: searchText, all: ""
+                        search: searchText, all: "", sort: "name", dir: "asc"
                     }
                 })
         ).then(data => data.data)

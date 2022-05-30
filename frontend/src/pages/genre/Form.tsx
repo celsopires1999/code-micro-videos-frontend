@@ -1,4 +1,4 @@
-import { Box, Button, ButtonProps, makeStyles, MenuItem, TextField, Theme } from "@material-ui/core";
+import { MenuItem, TextField } from "@material-ui/core";
 import * as React from "react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -10,14 +10,8 @@ import { useSnackbar } from "notistack";
 import { Category, Genre } from "../../util/models";
 import DefaultForm from "../../components/DefaultForm";
 import LoadingContext from "../../components/loading/LoadingContext";
-
-const useStyles = makeStyles((theme: Theme) => {
-    return {
-        submit: {
-            margin: theme.spacing(1)
-        }
-    }
-})
+import SubmitActions from "../../components/SubmitActions";
+import useSnackbarFormError from "../../hooks/useSnackbarFormError";
 
 const validationSchema = yup.object().shape({
     name: yup.string()
@@ -38,28 +32,22 @@ export const Form = () => {
         setValue,
         watch,
         errors,
-        reset
+        reset,
+        triggerValidation,
+        formState
     } = useForm<{ name, categories_id }>({
         validationSchema,
         defaultValues: {
             categories_id: []
         }
     });
-
+    useSnackbarFormError(formState.submitCount, errors);
     const { enqueueSnackbar } = useSnackbar();
     const history = useHistory();
-    const classes = useStyles();
     const [categories, setCategories] = useState<Category[]>([]);
     const { id }: any = useParams();
     const [genre, setGenre] = useState<Genre | null>(null);
     const loading = React.useContext(LoadingContext);
-
-    const buttonProps: ButtonProps = {
-        className: classes.submit,
-        color: "secondary",
-        variant: "contained",
-        disabled: loading,
-    }
 
     // get data to enable Genre edit
     useEffect(() => {
@@ -90,7 +78,7 @@ export const Form = () => {
                     `Não foi possível carregar as informações`,
                     { variant: 'error' }
                 )
-            } 
+            }
         })();
 
         return () => {
@@ -137,7 +125,7 @@ export const Form = () => {
                         { variant: 'error' });
                 }
             )
-            // .finally(() => setLoading(false))
+        // .finally(() => setLoading(false))
     }
 
     return (
@@ -183,16 +171,14 @@ export const Form = () => {
                     )
                 }
             </TextField>
-            <Box dir="rtl">
-                <Button
-                    color={"primary"}
-                    {...buttonProps}
-                    onClick={() => onSubmit(getValues(), null)}
-                >
-                    Salvar
-                </Button>
-                <Button {...buttonProps} type="submit">Salvar e continuar editando</Button>
-            </Box>
+            <SubmitActions
+                disabledButtons={loading}
+                handleSave={() =>
+                    triggerValidation().then(isValid => {
+                        isValid && onSubmit(getValues(), null)
+                    })
+                }
+            />
         </DefaultForm>
     );
 };

@@ -3,7 +3,7 @@ import EditIcon from '@material-ui/icons/Edit';
 import format from 'date-fns/format';
 import parseISO from 'date-fns/parseISO';
 import { useSnackbar } from 'notistack';
-import { useEffect, useState, useRef, useContext } from 'react';
+import { useEffect, useState, useRef, useContext, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import DeleteDialog from '../../components/DeleteDialog';
 import LoadingContext from '../../components/loading/LoadingContext';
@@ -109,9 +109,48 @@ const Table = () => {
     const { enqueueSnackbar } = useSnackbar();
     const { openDeleteDialog, setOpenDeleteDialog, rowsToDelete, setRowsToDelete } = useDeleteCollection();
     const tableRef = useRef() as React.MutableRefObject<MuiDataTableRefComponent>;
+    const extraFilter = useMemo(() => ({
+        createValidationsSchema: () => {
+            return yup.object().shape({
+                categories: yup.mixed()
+                    .nullable()
+                    .transform(value => {
+                        return !value || value === '' ? undefined : value.split(',')
+                    })
+                    .default(null),
+                genres: yup.mixed()
+                    .nullable()
+                    .transform(value => {
+                        return !value || value === '' ? undefined : value.split(',')
 
+                    })
+                    .default(null),
+            })
+        },
+        formatSearchParams: (debouncedFilterState) => {
+            return debouncedFilterState.extraFilter
+                ? {
+                    ...(
+                        debouncedFilterState.extraFilter.categories &&
+                        { categories: debouncedFilterState.extraFilter.categories.join(',') }
+                    ),
+                    ...(
+                        debouncedFilterState.extraFilter.genres &&
+                        { genres: debouncedFilterState.extraFilter.genres.join(',') }
+                    )
+                }
+                : undefined
+        },
+        getStateFromURL: (queryParams) => {
+            return {
+                categories: queryParams.get('categories'),
+                genres: queryParams.get('genres')
+            }
+        }
+    }), [])
     const {
         columns,
+        cleanSearchText,
         filterManager,
         filterState,
         debouncedFilterState,
@@ -123,46 +162,9 @@ const Table = () => {
         rowsPerPage,
         rowsPerPageOptions,
         tableRef,
-        extraFilter: {
-            createValidationsSchema: () => {
-                return yup.object().shape({
-                    categories: yup.mixed()
-                        .nullable()
-                        .transform(value => {
-                            return !value || value === '' ? undefined : value.split(',')
-                        })
-                        .default(null),
-                    genres: yup.mixed()
-                        .nullable()
-                        .transform(value => {
-                            return !value || value === '' ? undefined : value.split(',')
-
-                        })
-                        .default(null),
-                })
-            },
-            formatSearchParams: (debouncedFilterState) => {
-                return debouncedFilterState.extraFilter
-                    ? {
-                        ...(
-                            debouncedFilterState.extraFilter.categories &&
-                            { categories: debouncedFilterState.extraFilter.categories.join(',') }
-                        ),
-                        ...(
-                            debouncedFilterState.extraFilter.genres &&
-                            { genres: debouncedFilterState.extraFilter.genres.join(',') }
-                        )
-                    }
-                    : undefined
-            },
-            getStateFromURL: (queryParams) => {
-                return {
-                    categories: queryParams.get('categories'),
-                    genres: queryParams.get('genres')
-                }
-            }
-        },
+        extraFilter: extraFilter,
     });
+    const searchText = cleanSearchText(debouncedFilterState.search);
 
     const indexColumnCategories = columns.findIndex(c => c.name === 'categories');
     const columnCategories = columns[indexColumnCategories];
@@ -173,6 +175,36 @@ const Table = () => {
     const columnGenres = columns[indexColumnGenres];
     const genresFilterValue = filterState.extraFilter && filterState.extraFilter.genres as never;
     (columnGenres.options as any).filterList = genresFilterValue ? genresFilterValue : [];
+
+    const getData = useCallback(async ({ search, page, per_page, sort, dir, categories, genres }) => {
+        try {
+            const { data } = await videoHttp.list<ListResponse<Video>>({
+                queryParams: {
+                    search,
+                    page,
+                    per_page,
+                    sort,
+                    dir,
+                    categories,
+                    genres,
+                }
+            });
+            if (subscribed.current) {
+                setData(data.data);
+                setTotalRecords(data.meta.total);
+                if (openDeleteDialog) { setOpenDeleteDialog(false) };
+            }
+        } catch (error) {
+            console.error(error);
+            if (videoHttp.isCancelledRequest(error)) {
+                return;
+            }
+            enqueueSnackbar(
+                `Não foi possível encontrar as informações`,
+                { variant: 'error' }
+            );
+        }
+    }, [enqueueSnackbar, openDeleteDialog, setOpenDeleteDialog, setTotalRecords])
 
     useEffect(() => {
         let isSubscribed = true;
@@ -195,7 +227,7 @@ const Table = () => {
             isSubscribed = false;
         }
 
-    }, []);
+    }, [columnCategories, enqueueSnackbar]);
 
     useEffect(() => {
         let isSubscribed = true;
@@ -218,60 +250,39 @@ const Table = () => {
             isSubscribed = false;
         }
 
-    }, []);
+    }, [columnGenres.options, enqueueSnackbar]);
 
     useEffect(() => {
         subscribed.current = true
-        filterManager.pushHistory();
-        getData();
+        getData({
+            search: searchText,
+            page: debouncedFilterState.pagination.page,
+            per_page: debouncedFilterState.pagination.per_page,
+            sort: debouncedFilterState.order.sort,
+            dir: debouncedFilterState.order.dir,
+            ...(
+                debouncedFilterState.extraFilter &&
+                debouncedFilterState.extraFilter.categories &&
+                { categories: debouncedFilterState.extraFilter.categories.join(',') }
+            ),
+            ...(
+                debouncedFilterState.extraFilter &&
+                debouncedFilterState.extraFilter.genres &&
+                { genres: debouncedFilterState.extraFilter.genres.join(',') }
+            ),
+        });
         return () => {
             subscribed.current = false;
         }
     }, [
-        filterManager.cleanSearchText(debouncedFilterState.search),
+        getData,
+        searchText,
         debouncedFilterState.pagination.page,
         debouncedFilterState.pagination.per_page,
         debouncedFilterState.order,
-        JSON.stringify(debouncedFilterState.extraFilter)
+        debouncedFilterState.extraFilter
     ]);
 
-    async function getData() {
-        try {
-            const { data } = await videoHttp.list<ListResponse<Video>>({
-                queryParams: {
-                    search: filterManager.cleanSearchText(filterState.search),
-                    page: filterState.pagination.page,
-                    per_page: filterState.pagination.per_page,
-                    sort: filterState.order.sort,
-                    dir: filterState.order.dir,
-                    ...(
-                        debouncedFilterState.extraFilter &&
-                        debouncedFilterState.extraFilter.categories &&
-                        { categories: debouncedFilterState.extraFilter.categories.join(',') }
-                    ),
-                    ...(
-                        debouncedFilterState.extraFilter &&
-                        debouncedFilterState.extraFilter.genres &&
-                        { genres: debouncedFilterState.extraFilter.genres.join(',') }
-                    ),
-                }
-            });
-            if (subscribed.current) {
-                setData(data.data);
-                setTotalRecords(data.meta.total);
-                if (openDeleteDialog) { setOpenDeleteDialog(false) };
-            }
-        } catch (error) {
-            console.error(error);
-            if (videoHttp.isCancelledRequest(error)) {
-                return;
-            }
-            enqueueSnackbar(
-                `Não foi possível encontrar as informações`,
-                { variant: 'error' }
-            );
-        } 
-    }
     function deleteRows(confirmed: boolean) {
         if (!confirmed) {
             setOpenDeleteDialog(false);
@@ -295,7 +306,23 @@ const Table = () => {
                     const page = filterState.pagination.page - 2;
                     filterManager.changePage(page);
                 } else {
-                    getData()
+                    getData({
+                        search: searchText,
+                        page: debouncedFilterState.pagination.page,
+                        per_page: debouncedFilterState.pagination.per_page,
+                        sort: debouncedFilterState.order.sort,
+                        dir: debouncedFilterState.order.dir,
+                        ...(
+                            debouncedFilterState.extraFilter &&
+                            debouncedFilterState.extraFilter.categories &&
+                            { categories: debouncedFilterState.extraFilter.categories.join(',') }
+                        ),
+                        ...(
+                            debouncedFilterState.extraFilter &&
+                            debouncedFilterState.extraFilter.genres &&
+                            { genres: debouncedFilterState.extraFilter.genres.join(',') }
+                        ),
+                    })
                 }
             });
     }

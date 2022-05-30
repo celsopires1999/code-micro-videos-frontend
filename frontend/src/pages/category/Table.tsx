@@ -3,7 +3,7 @@ import EditIcon from '@material-ui/icons/Edit';
 import format from 'date-fns/format';
 import parseISO from 'date-fns/parseISO';
 import { useSnackbar } from 'notistack';
-import { useEffect, useState, useRef, useContext } from 'react';
+import { useEffect, useState, useRef, useContext, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { BadgeNo, BadgeYes } from '../../components/Badge';
 import DeleteDialog from '../../components/DeleteDialog';
@@ -12,7 +12,6 @@ import DefaultTable, { makeActionStyles, TableColumn, MuiDataTableRefComponent }
 import FilterResetButton from '../../components/Table/FilterResetButton';
 import useDeleteCollection from '../../hooks/useDeleteCollections';
 import useFilter from '../../hooks/useFilter';
-// import { Creators } from '../../store/filter';
 import categoryHttp from '../../util/http/category-http';
 import { Category, ListResponse } from '../../util/models';
 import * as yup from '../../util/vendor/yup';
@@ -95,13 +94,39 @@ const Table = () => {
     const { enqueueSnackbar } = useSnackbar();
     const { openDeleteDialog, setOpenDeleteDialog, rowsToDelete, setRowsToDelete } = useDeleteCollection();
     const tableRef = useRef() as React.MutableRefObject<MuiDataTableRefComponent>;
-
+    const extraFilter = useMemo(() => ({
+        createValidationsSchema: () => {
+            return yup.object().shape({
+                is_active: yup.string()
+                    .nullable()
+                    .transform(value => {
+                        return !value || !Object.keys(isActive).includes(value) ? undefined : value;
+                    })
+                    .default(null)
+            })
+        },
+        formatSearchParams: (debouncedFilterState) => {
+            return debouncedFilterState.extraFilter
+                ? {
+                    ...(
+                        debouncedFilterState.extraFilter.is_active &&
+                        { is_active: debouncedFilterState.extraFilter.is_active }
+                    )
+                }
+                : undefined
+        },
+        getStateFromURL: (queryParams) => {
+            return {
+                is_active: queryParams.get('is_active')
+            }
+        }
+    }), []);
     const {
         columns,
+        cleanSearchText,
         filterManager,
         filterState,
         debouncedFilterState,
-        // dispatch,
         totalRecords,
         setTotalRecords,
     } = useFilter({
@@ -110,73 +135,25 @@ const Table = () => {
         rowsPerPage,
         rowsPerPageOptions,
         tableRef,
-        extraFilter: {
-            createValidationsSchema: () => {
-                return yup.object().shape({
-                    is_active: yup.string()
-                        .nullable()
-                        .transform(value => {
-                            return !value || !Object.keys(isActive).includes(value) ? undefined : value;
-                        })
-                        .default(null)
-                })
-            },
-            formatSearchParams: (debouncedFilterState) => {
-                return debouncedFilterState.extraFilter
-                    ? {
-                        ...(
-                            debouncedFilterState.extraFilter.is_active &&
-                            { is_active: debouncedFilterState.extraFilter.is_active }
-                        )
-                    }
-                    : undefined
-            },
-            getStateFromURL: (queryParams) => {
-                return {
-                    is_active: queryParams.get('is_active')
-                }
-            }
-        },
+        extraFilter: extraFilter,
     });
+    const searchText = cleanSearchText(debouncedFilterState.search);
 
     const indexColumnIsActive = columns.findIndex(c => c.name === 'is_active');
     const columnIsActive = columns[indexColumnIsActive];
     const isActiveFilterValue = filterState.extraFilter && filterState.extraFilter.is_active as never;
     (columnIsActive.options as any).filterList = isActiveFilterValue ? [isActiveFilterValue] : []
-    // const serverSideFilterList = columns.map(column => []);
-    // if (isActiveFilterValue) {
-    //     serverSideFilterList[indexColumnIsActive] = [isActiveFilterValue];
-    // }
 
-    useEffect(() => {
-        subscribed.current = true
-        filterManager.pushHistory();
-        getData();
-        return () => {
-            subscribed.current = false;
-        }
-    }, [
-        filterManager.cleanSearchText(debouncedFilterState.search),
-        debouncedFilterState.pagination.page,
-        debouncedFilterState.pagination.per_page,
-        debouncedFilterState.order,
-        JSON.stringify(debouncedFilterState.extraFilter)
-    ]);
-
-    async function getData() {
+    const getData = useCallback(async ({ search, page, per_page, sort, dir, is_active }) => {
         try {
             const { data } = await categoryHttp.list<ListResponse<Category>>({
                 queryParams: {
-                    search: filterManager.cleanSearchText(filterState.search),
-                    page: filterState.pagination.page,
-                    per_page: filterState.pagination.per_page,
-                    sort: filterState.order.sort,
-                    dir: filterState.order.dir,
-                    ...(
-                        debouncedFilterState.extraFilter &&
-                        debouncedFilterState.extraFilter.is_active &&
-                        { is_active: isActive[debouncedFilterState.extraFilter.is_active] }
-                    )
+                    search,
+                    page,
+                    per_page,
+                    sort,
+                    dir,
+                    is_active
                 }
             });
             if (subscribed.current) {
@@ -196,7 +173,33 @@ const Table = () => {
                 { variant: 'error' }
             );
         }
-    }
+    }, [enqueueSnackbar, openDeleteDialog, setOpenDeleteDialog, setTotalRecords]);
+
+    useEffect(() => {
+        subscribed.current = true
+        getData({
+            search: searchText,
+            page: debouncedFilterState.pagination.page,
+            per_page: debouncedFilterState.pagination.per_page,
+            sort: debouncedFilterState.order.sort,
+            dir: debouncedFilterState.order.dir,
+            ...(
+                debouncedFilterState.extraFilter &&
+                debouncedFilterState?.extraFilter?.is_active &&
+                { is_active: isActive[debouncedFilterState.extraFilter.is_active] }
+            )
+        });
+        return () => {
+            subscribed.current = false;
+        }
+    }, [
+        getData,
+        searchText,
+        debouncedFilterState.pagination.page,
+        debouncedFilterState.pagination.per_page,
+        debouncedFilterState.order,
+        debouncedFilterState.extraFilter
+    ]);
 
     function deleteRows(confirmed: boolean) {
         if (!confirmed) {
@@ -221,7 +224,18 @@ const Table = () => {
                     const page = filterState.pagination.page - 2;
                     filterManager.changePage(page);
                 } else {
-                    getData()
+                    getData({
+                        search: searchText,
+                        page: debouncedFilterState.pagination.page,
+                        per_page: debouncedFilterState.pagination.per_page,
+                        sort: debouncedFilterState.order.sort,
+                        dir: debouncedFilterState.order.dir,
+                        ...(
+                            debouncedFilterState.extraFilter &&
+                            debouncedFilterState?.extraFilter?.is_active &&
+                            { is_active: isActive[debouncedFilterState.extraFilter.is_active] }
+                        )
+                    });
                 }
             });
     }
@@ -253,7 +267,6 @@ const Table = () => {
                     customToolbar: () => (
                         <FilterResetButton
                             handleClick={() => {
-                                // dispatch(Creators.setReset(filterManager.getStateFromURL()))
                                 filterManager.resetFilter();
                             }}
                         />
