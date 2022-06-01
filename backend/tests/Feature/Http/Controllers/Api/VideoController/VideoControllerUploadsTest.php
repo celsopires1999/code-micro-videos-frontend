@@ -39,7 +39,8 @@ class VideoControllerUploadsTest extends BaseVideoControllerTestCase
             'trailer_file',
             'mp4',
             Video::TRAILER_FILE_MAX_SIZE,
-            'mimetypes', ['values' => 'video/mp4']
+            'mimetypes',
+            ['values' => 'video/mp4']
         );
     }
 
@@ -49,7 +50,8 @@ class VideoControllerUploadsTest extends BaseVideoControllerTestCase
             'video_file',
             'mp4',
             Video::VIDEO_FILE_MAX_SIZE,
-            'mimetypes', ['values' => 'video/mp4']
+            'mimetypes',
+            ['values' => 'video/mp4']
         );
     }
 
@@ -80,6 +82,8 @@ class VideoControllerUploadsTest extends BaseVideoControllerTestCase
 
         $response->assertStatus(200);
         $this->assertFilesOnPersist($response, $files);
+        $video = Video::find($response->json('data.id'));
+        $this->assertIfFilesUrlExists($video, $response);
 
         $newFiles = [
             'thumb_file' => UploadedFile::fake()->create('thumb_file.jpg'),
@@ -87,12 +91,14 @@ class VideoControllerUploadsTest extends BaseVideoControllerTestCase
         ];
 
         $response = $this->json(
-            'PUT', $this->routeUpdate(), $this->sendData + $newFiles
+            'PUT',
+            $this->routeUpdate(),
+            $this->sendData + $newFiles
         );
 
         $response->assertStatus(200);
         $this->assertFilesOnPersist(
-            $response, 
+            $response,
             Arr::except($files, ['thumb_file', 'video_file']) + $newFiles
         );
 
