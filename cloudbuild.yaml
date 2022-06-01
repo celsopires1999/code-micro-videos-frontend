@@ -48,3 +48,24 @@ steps:
 - id: "Rodando Phpunit"
   name: 'docker'
   args: ['exec','-t','app','php','/var/www/backend/vendor/bin/phpunit','-c','/var/www/backend/phpunit.xml']    
+
+-   id: "Copiando frontend .env"
+    name: 'docker'
+    args: ['exec','-t','app','cp','/var/www/frontend/.env.example','/var/www/frontend/.env']
+
+-   id: 'Install front-end'
+    name: 'docker'
+    args: ['exec','-t','app','npm','install', '--prefix', '/var/www/frontend']
+
+-   id: 'Permission on scripts/build.sh'
+    name: 'docker'
+    args: ['exec','-t','app','chmod','+x','/var/www/frontend/scripts/build.sh']
+
+-   id: 'Build front-end'
+    name: 'docker'
+    args: ['exec','-t','app','npm','run', 'build-laravel','--prefix', '/var/www/frontend']
+
+-   id: 'Test Laravel and React integration'
+    name: 'docker'
+    args: ['exec','-w','/var/www/backend','-t','app','php','artisan','dusk', '--env=testing']
+    

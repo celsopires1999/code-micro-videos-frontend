@@ -27,7 +27,7 @@
         </whitelist>
     </filter>
     <extensions>
-        <extension class="Tests\Bootstrap"/>
+        <extension class="Tests\bootstrap"/>
     </extensions>
     <php>
         <server name="APP_ENV" value="testing"/>

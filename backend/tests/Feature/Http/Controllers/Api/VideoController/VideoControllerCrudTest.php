@@ -51,6 +51,16 @@ class VideoControllerCrudTest extends BaseVideoControllerTestCase
                 'updated_at',
                 'deleted_at',
             ]
+        ],
+        'cast_members' => [
+            '*' => [
+                'id',
+                'name',
+                'type',
+                'created_at',
+                'updated_at',
+                'deleted_at',
+            ]
         ]
     ];
 
@@ -87,7 +97,7 @@ class VideoControllerCrudTest extends BaseVideoControllerTestCase
 
         $id = $response->json('data.id');
         $resource = new VideoResource(Video::find($id));
-        $this->assertResource($response, $resource);        
+        $this->assertResource($response, $resource);
     }
 
     public function testInvalidationRequired()
@@ -102,7 +112,7 @@ class VideoControllerCrudTest extends BaseVideoControllerTestCase
             'genres_id' => '',
         ];
         $this->assertInvalidationInStoreAction($data, 'required');
-        $this->assertInvalidationInUpdateAction($data, 'required');        
+        $this->assertInvalidationInUpdateAction($data, 'required');
     }
 
     public function testInvalidationCategoriesIdField()
@@ -175,7 +185,7 @@ class VideoControllerCrudTest extends BaseVideoControllerTestCase
             'year_launched' => 'a'
         ];
         $this->assertInvalidationInStoreAction($data, 'date_format', ['format' => 'Y']);
-        $this->assertInvalidationInUpdateAction($data,'date_format', ['format' => 'Y']);          
+        $this->assertInvalidationInUpdateAction($data, 'date_format', ['format' => 'Y']);
     }
 
     public function testInvalidationOpenedField()
@@ -184,7 +194,7 @@ class VideoControllerCrudTest extends BaseVideoControllerTestCase
             'opened' => 'a'
         ];
         $this->assertInvalidationInStoreAction($data, 'boolean');
-        $this->assertInvalidationInUpdateAction($data,'boolean');          
+        $this->assertInvalidationInUpdateAction($data, 'boolean');
     }
 
     public function testInvalidationRatingField()
@@ -193,12 +203,12 @@ class VideoControllerCrudTest extends BaseVideoControllerTestCase
             'rating' => 0
         ];
         $this->assertInvalidationInStoreAction($data, 'in');
-        $this->assertInvalidationInUpdateAction($data,'in');          
+        $this->assertInvalidationInUpdateAction($data, 'in');
     }
 
     public function testSaveWithoutFiles()
     {
-        $testData = Arr::except($this->sendData, ['categories_id', 'genres_id']);
+        $testData = Arr::except($this->sendData, ['categories_id', 'genres_id', 'cast_members_id']);
         $data = [
             [
                 'send_data' => $this->sendData,
@@ -274,8 +284,9 @@ class VideoControllerCrudTest extends BaseVideoControllerTestCase
 
         $this->sendData = Arr::except($this->sendData, ['categories_id', 'genres_id']);
 
-        $response = $this->json('POST', 
-            $this->routeStore(), 
+        $response = $this->json(
+            'POST',
+            $this->routeStore(),
             $this->sendData + [
                 'genres_id' => [$genreId],
                 'categories_id' => [$categoriesId[0]]
@@ -287,8 +298,9 @@ class VideoControllerCrudTest extends BaseVideoControllerTestCase
             'video_id' => $response->json('data.id'),
         ]);
 
-        $response = $this->json('PUT', 
-            route('videos.update', ['video' => $response->json('data.id')]), 
+        $response = $this->json(
+            'PUT',
+            route('videos.update', ['video' => $response->json('data.id')]),
             $this->sendData + [
                 'genres_id' => [$genreId],
                 'categories_id' => [$categoriesId[1], $categoriesId[2]]
@@ -314,14 +326,15 @@ class VideoControllerCrudTest extends BaseVideoControllerTestCase
         $genres = factory(Genre::class, 3)->create();
         $genresId = $genres->pluck('id')->toArray();
         $categoryId = factory(Category::class)->create()->id;
-        $genres->each(function($genre) use($categoryId){
+        $genres->each(function ($genre) use ($categoryId) {
             $genre->categories()->sync($categoryId);
         });
 
         $this->sendData = Arr::except($this->sendData, ['categories_id', 'genres_id']);
 
-        $response = $this->json('POST', 
-            $this->routeStore(), 
+        $response = $this->json(
+            'POST',
+            $this->routeStore(),
             $this->sendData + [
                 'categories_id' => [$categoryId],
                 'genres_id' => [$genresId[0]],
@@ -333,8 +346,9 @@ class VideoControllerCrudTest extends BaseVideoControllerTestCase
             'video_id' => $response->json('data.id'),
         ]);
 
-        $response = $this->json('PUT', 
-            route('videos.update', ['video' => $response->json('data.id')]), 
+        $response = $this->json(
+            'PUT',
+            route('videos.update', ['video' => $response->json('data.id')]),
             $this->sendData + [
                 'categories_id' => [$categoryId],
                 'genres_id' => [$genresId[1], $genresId[2]]
@@ -354,7 +368,7 @@ class VideoControllerCrudTest extends BaseVideoControllerTestCase
             'video_id' => $response->json('data.id'),
         ]);
     }
-    
+
     public function testDestroy()
     {
         $response = $this->json('DELETE', route('videos.destroy', ['video' => $this->video->id]));

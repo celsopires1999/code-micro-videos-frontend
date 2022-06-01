@@ -5,6 +5,7 @@ namespace Tests\Feature\Http\Controllers\Api\VideoController;
 use App\Models\Video;
 use App\Models\Category;
 use App\Models\Genre;
+use App\Models\CastMember;
 use Illuminate\Foundation\Testing\TestResponse;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Tests\TestCase;
@@ -15,31 +16,21 @@ class BaseVideoControllerTestCase extends TestCase
 
     protected $video;
     protected $sendData;
-    protected $serializedFields = [
-        'id',
-        'title',
-        'description',
-        'year_launched',
-        'opened',
-        'rating',
-        'duration',
-        'video_file',
-        'thumb_file',
-        'banner_file',
-        'trailer_file',
-        'created_at',
-        'updated_at',
-        'deleted_at'
-    ];
-
 
     protected function setUp(): void
     {
         parent::setUp();
-        $this->video = factory(Video::class)->create(['opened' => false]);
+        $this->video = factory(Video::class)->create([
+            'opened' => false,
+            'thumb_file' => 'thumb.jpg',
+            'banner_file' => 'banner.jpg',
+            'video_file' => 'video.mp4',
+            'trailer_file' => 'trailer.mp4',
+        ]);
         $category = factory(Category::class)->create();
         $genre = factory(Genre::class)->create();
         $genre->categories()->sync([$category->id]);
+        $castMember = factory(CastMember::class)->create();
         $this->sendData = [
             'title' => 'title',
             'description' => 'description',
@@ -47,7 +38,8 @@ class BaseVideoControllerTestCase extends TestCase
             'rating' => Video::RATING_LIST[0],
             'duration' => 90,
             'categories_id' => [$category->id],
-            'genres_id' => [$genre->id]
+            'genres_id' => [$genre->id],
+            'cast_members_id' => [$castMember->id]
         ];
     }
 

@@ -2,11 +2,13 @@
 
 namespace Tests\Unit\Models;
 
+use App\Models\Traits\SerializeDateToIso8601;
 use App\Models\Traits\UploadFiles;
 use Tests\TestCase;
 use App\Models\Video;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Models\Traits\Uuid;
+use EloquentFilter\Filterable;
 
 class VideoUnitTest extends TestCase
 {
@@ -44,7 +46,8 @@ class VideoUnitTest extends TestCase
         $traits = [
             SoftDeletes::class,
             Uuid::class,
-            UploadFiles::class
+            UploadFiles::class,
+            Filterable::class
         ];
 
         $videoTraits = array_keys(class_uses(Video::class));
@@ -64,5 +67,4 @@ class VideoUnitTest extends TestCase
         }
         $this->assertCount(count($dates), $this->video->getDates());
     }
-
 }

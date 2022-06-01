@@ -35,7 +35,7 @@ class BasicCrudControllerTest extends TestCase
 
         /** @var Request $request */
         $request = \Mockery::mock(Request::class);
-       
+
         $request
             ->shouldReceive('all')
             ->once()
@@ -132,6 +132,10 @@ class BasicCrudControllerTest extends TestCase
             ->shouldReceive('all')
             ->once()
             ->andReturn(['name' => 'test_changed', 'description' => 'test_description_changed']);
+        $request
+            ->shouldReceive('isMethod')
+            ->once()
+            ->andReturn('put');
         $resource = $this->controller->update($request, $category->id);
         $serialized = $resource->response()->getData(true);
         $category->refresh();
